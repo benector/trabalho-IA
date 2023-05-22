@@ -65,12 +65,12 @@ void imprimeJarros(vector<Jarro> &jarros){
 
 struct Estado {
     vector<Jarro> jarros;
-    vector<int> movimentos;
+    vector<vector<int>> movimentos;
     bool visitado;
 
     Estado(const std::vector<Jarro>& jarros) : jarros(jarros), visitado(true) {}
     
-    void defineMovimentos(vector<int> movimentos){
+    void defineMovimentos(vector<vector<int>>movimentos){
         this->movimentos = movimentos;
     }
 };
@@ -83,32 +83,29 @@ bool haSolucaoNoEstadoAtual(vector<Jarro> &jarros, int solucao){
     return false;
 }
 
-void obterMovimentosDeJarro(Estado &estado){
+vector<vector<int>>* obterMovimentosDeJarro(Estado &estado){
 
-    vector<vector<int>> matrizDeMovimentos;
-    
     //passaremos por todas as possibilidade de movimentos e guardaremos num vetor de vetores
     //cada indice do vetor corresponde ao indice do jarro no vetor de jarros
     //e o valor de cada posicao do vetor guarda um vetor com os movimentos possíveis para aquele jarro
     //exemplo:
     //matriz[0] = {-2, 2} (Jarro 0: pode esvaziar (opçao -2), ou pode transferir para o jarro 2 (opcao 2))
     //matriz[1] = {-1} (Jarro 1: pode ser enchido (opcao -2))
+    vector<vector<int>>* movimentos;
 
     //para cada um dos jarros:
     for(int i =0; i<estado.jarros.size(); i++){
-        vector<int> movimentos;
+        vector<int> movimentosJarro;
         //se o jarro esta vazio pode ser preenchido por fora
         if(estado.jarros[i].estaVazio())
         {
-            cout<< "Jarro esta vazio" << endl;
-            movimentos.push_back(-1);//preenchido por fora
+            movimentosJarro.push_back(-1);//preenchido por fora
         }
         //se jarro esta cheio pode ser esvaziado totalmente 
         
           if(estado.jarros[i].estaCheio())
         {
-            cout<< "Jarro esta cheio" << endl;
-            movimentos.push_back(-2);//esvaziado totalmente
+            movimentosJarro.push_back(-2);//esvaziado totalmente
         } 
         //e ainda, se houver conteudo nesse esse jarro (seja cheio ou não), ele pode transferi-lo para outro
         //para isso percorreremos os demais jarros do vetor de jarros e vamos adicionar 
@@ -118,18 +115,21 @@ void obterMovimentosDeJarro(Estado &estado){
                 cout << "Quantidade que pode ser recebida no jarro " << j;
                 if(estado.jarros[j].podeReceberConteudo(estado.jarros[i]))
                 {
-                    movimentos.push_back(j);
+                    movimentosJarro.push_back(j);
                 }
                 cout <<endl;
             }
         }
         
-        cout << "Movimentos para o jarro " << i << ": ";
-        for(int k=0; k<movimentos.size(); k++){
-            cout << movimentos[k] << " , ";
-        }
+      cout << "Movimentos para o jarro " << i << ": ";
+      for(int k=0; k<movimentosJarro.size(); k++){
+          cout << movimentosJarro[k] << " , ";
+       }
         cout << endl;
+        movimentos->push_back(movimentosJarro);
+
     }
+    return movimentos;
 }
 void backtracking(vector<Jarro> &jarros, int solucao){
     
@@ -142,13 +142,23 @@ void backtracking(vector<Jarro> &jarros, int solucao){
     estados.push_back(estado_inicial);
     bool sucesso = false;
     bool fracasso = false;
-    int i = 0;
+    vector<vector<int>> caminho;
     //enquanto não tivermos sucesso ou fracasso
     while(!(sucesso||fracasso)){
         //para cada estado temos um vetor de movimentos 
-        obterMovimentosDeJarro(estado_atual);
+        vector<vector<int>>* movimentos = obterMovimentosDeJarro(estado_atual);
+            for(int k=0; k<movimentos->size(); k++){
+                cout << "Movimentos para o jarro " << k << ": ";
+                for(int l=0; l< movimentos[k].size(); l++){
+                    cout << l << " , " ;
+                }
+                cout << endl;
+            }
+       
+        delete movimentos;
+        
         sucesso = true;
-       }
+     }
 }
     
     
@@ -191,8 +201,8 @@ int main() {
     cout << "A meta é chegar em " << solucao << " litros" <<endl;
     
     backtracking(jarros, solucao);
-    jarros[0].transferirDesteJarro(jarros[1]);
-    backtracking(jarros, solucao);
+    //jarros[0].transferirDesteJarro(jarros[1]);
+    //backtracking(jarros, solucao);
 
     
     imprimeJarros(jarros);
