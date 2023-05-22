@@ -1,5 +1,4 @@
 
-*******************************************************************************/
 #include <iostream>
 #include <vector>
 
@@ -31,8 +30,8 @@ struct Jarro {
     
     //se o jarro pode receber conteudo quer dizer que não está cheio
     bool podeReceberConteudo(Jarro& outroJarro){
-        int qtd = min(conteudoOutroJarro.conteudo, this->capacidade - this->conteudo);
-        cout << "Quantidade que pode ser recebida: " << qtd << endl;;
+        int qtd = min(outroJarro.conteudo, this->capacidade - this->conteudo);
+        cout << " " <<qtd << endl;;
         if(qtd>0)
         return true;
         return false;
@@ -40,7 +39,7 @@ struct Jarro {
     }
     
     bool estaVazio(){
-        if(conteudo!=0)
+        if(conteudo==0)
         return true;
         return false;
     }
@@ -53,24 +52,6 @@ struct Jarro {
     
 };
 
-vector<int> movimentosDeJarro(vector<Jarro> &jarros){
-    
-    vector<int> movimentos;
-    
-    //se o jarro esta vazio ele pode ser enchido do 0 ou receber de outro jarro
-    if(jarro[i].estaVazio)
-    {
-        movimentos.push_back(1);
-        movimentos.push_back(2);
-    } 
-    //se jarro esta cheio ele pode transferir para outro Jarro ou ser esvaziado totalmente
-      if(jarro[i].estaCheio)
-    {
-        movimentos.push_back(2);
-        movimentos.push_back(3);
-    }
-    return movimentos;
-}
 
 void imprimeJarros(vector<Jarro> &jarros){
       
@@ -83,10 +64,15 @@ void imprimeJarros(vector<Jarro> &jarros){
 
 
 struct Estado {
-    std::vector<Jarro> jarros;
+    vector<Jarro> jarros;
+    vector<int> movimentos;
     bool visitado;
 
-    Estado(const std::vector<Jarro>& jarros) : jarros(jarros), visitado(false) {}
+    Estado(const std::vector<Jarro>& jarros) : jarros(jarros), visitado(true) {}
+    
+    void defineMovimentos(vector<int> movimentos){
+        this->movimentos = movimentos;
+    }
 };
 
 bool haSolucaoNoEstadoAtual(vector<Jarro> &jarros, int solucao){
@@ -97,29 +83,75 @@ bool haSolucaoNoEstadoAtual(vector<Jarro> &jarros, int solucao){
     return false;
 }
 
-void backtracking(vector<Jarro> &jarros,int solucao){
+void obterMovimentosDeJarro(Estado &estado){
+
+    vector<vector<int>> matrizDeMovimentos;
+    
+    //passaremos por todas as possibilidade de movimentos e guardaremos num vetor de vetores
+    //cada indice do vetor corresponde ao indice do jarro no vetor de jarros
+    //e o valor de cada posicao do vetor guarda um vetor com os movimentos possíveis para aquele jarro
+    //exemplo:
+    //matriz[0] = {-2, 2} (Jarro 0: pode esvaziar (opçao -2), ou pode transferir para o jarro 2 (opcao 2))
+    //matriz[1] = {-1} (Jarro 1: pode ser enchido (opcao -2))
+
+    //para cada um dos jarros:
+    for(int i =0; i<estado.jarros.size(); i++){
+        vector<int> movimentos;
+        //se o jarro esta vazio pode ser preenchido por fora
+        if(estado.jarros[i].estaVazio())
+        {
+            cout<< "Jarro esta vazio" << endl;
+            movimentos.push_back(-1);//preenchido por fora
+        }
+        //se jarro esta cheio pode ser esvaziado totalmente 
+        
+          if(estado.jarros[i].estaCheio())
+        {
+            cout<< "Jarro esta cheio" << endl;
+            movimentos.push_back(-2);//esvaziado totalmente
+        } 
+        //e ainda, se houver conteudo nesse esse jarro (seja cheio ou não), ele pode transferi-lo para outro
+        //para isso percorreremos os demais jarros do vetor de jarros e vamos adicionar 
+        //ao vetor de movimentos os indices dos jarros que podem receber conteudo do jarro atual
+        for(int j = 0; j<estado.jarros.size(); j++){
+            if(i!=j){
+                cout << "Quantidade que pode ser recebida no jarro " << j;
+                if(estado.jarros[j].podeReceberConteudo(estado.jarros[i]))
+                {
+                    movimentos.push_back(j);
+                }
+                cout <<endl;
+            }
+        }
+        
+        cout << "Movimentos para o jarro " << i << ": ";
+        for(int k=0; k<movimentos.size(); k++){
+            cout << movimentos[k] << " , ";
+        }
+        cout << endl;
+    }
+}
+void backtracking(vector<Jarro> &jarros, int solucao){
     
     //vetor para guardar os estados
     vector<Estado> estados; 
     //insere estado inicial na lista de estados
-    Estado inicial = Estado(jarros);
-    Estado atual = inicial;
-    matrizEstados.push_back(inicial);
+    Estado estado_inicial = Estado(jarros);
+    //estado atual recebe estado inicial
+    Estado estado_atual = estado_inicial;
+    estados.push_back(estado_inicial);
     bool sucesso = false;
     bool fracasso = false;
     int i = 0;
+    //enquanto não tivermos sucesso ou fracasso
     while(!(sucesso||fracasso)){
-        vector<int> movimentos = movimentosDeJarro(estadoAtual.jarros);
-        //se houver movimentos de jarro
-       if(movimentos!=0){
-           //escolher um deles
+        //para cada estado temos um vetor de movimentos 
+        obterMovimentosDeJarro(estado_atual);
+        sucesso = true;
        }
-    }
-    
-    
-
 }
-
+    
+    
 int main() {
     // Criando os jarros usando um vetor
     vector<Jarro> jarros;
@@ -141,12 +173,13 @@ int main() {
        }
     }
     
+   
     //BACKTRACKING: 
     //Primeira estratégia: preencher o jarro de maior capacidade e usá-lo como raíz da busca
     //O jarro de maior capacidade garantidamente pode transferir para outros sem que seu conteúdo fique vazio de primeira
     //Se escolhermos um jarro de conteudo inferior como raiz, ao transferir teremos a mesma função de esvaziar um jarro no inicio
     //o que é um movimento desnecessário
-    
+     
     jarros[jarroMaiorCapacidade].encherJarro();
     Jarro aux = jarros[0];
     //Tornando o jarro de maior capacidade a raíz
@@ -158,16 +191,11 @@ int main() {
     cout << "A meta é chegar em " << solucao << " litros" <<endl;
     
     backtracking(jarros, solucao);
+    jarros[0].transferirDesteJarro(jarros[1]);
+    backtracking(jarros, solucao);
+
     
     imprimeJarros(jarros);
-
-   // jarros[0].encherJarro();
-    
-   // jarros[1].podeReceberConteudo(jarros[0].conteudo);
-   // jarros[0].transferirDesteJarro(jarros[1]);
-   // jarros[1].podeReceberConteudo(jarros[0].conteudo);
-
-
 
     return 0;
 }
