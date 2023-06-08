@@ -64,6 +64,10 @@ struct Estado {
     void defineMovimentos(const vector<vector<int>>& movimentos) {
         this->movimentos = movimentos;
     }
+    
+    void marcarComoVisitado(){
+        this->visitado = true;
+    }
 };
 
 vector<vector<int>> obterMovimentosDeJarro(Estado& estado) {
@@ -99,20 +103,34 @@ vector<vector<int>> obterMovimentosDeJarro(Estado& estado) {
 }
 
 bool haSolucaoNoEstadoAtual(vector<Jarro> jarros, int solucao){
-    cout << "ha solucao no estado atual" <<endl;
-    imprimeJarros(jarros);
+    cout << "Verifica solucao no estado atual " <<endl;
+    //imprimeJarros(jarros);
     for(int i =0; i<jarros.size(); i++){
-        if(jarros[i].conteudo==solucao)
-        return true;
+        if(jarros[i].conteudo==solucao){
+            cout << "Ha solucao no estado atual" <<endl;
+            return true;
+        }
     }
+    cout << "Não ha solucao no estado atual" <<endl;
     return false;
 }
 
-//Função para verificar se um estado tem as mesmas frequencias que algum outro estado
+void imprimeMovimentos(vector<vector<int>> movimentos){
+    cout << "Movimentos disponiveis " <<endl;
+    for (int i = 0; i < movimentos.size(); i++) {
+        cout << "jarro " << i << ": ";
+        for (int k = 0; k < movimentos[i].size(); k++) {
+                cout << movimentos[i][k] << " , ";
+        }
+            cout << endl;
+    }
+}
+//Função para verificar se um estado tem jarros com a mesma distribuiçao de liquidos
 
-void verificaEstadoRepetido(vector<Estado> &estados, Estado estado){
-    int contJarrosIguais=0;
+bool verificaEstadoRepetido(vector<Estado> &estados, Estado estado){
      for(int i=0; i<estados.size();i++){
+        int contJarrosIguais=0;
+        int repeticao = 0;
         for(int j=0;  j< estados[0].jarros.size();j++){
             cout << "estado " << i << " jarro " << j << " = " << estados[i].jarros[j].conteudo <<endl;
             cout << "estado checado jarro " << j << " = " << estado.jarros[j].conteudo<<endl;
@@ -120,110 +138,97 @@ void verificaEstadoRepetido(vector<Estado> &estados, Estado estado){
                 contJarrosIguais++;
             } 
         }
-        if (contJarrosIguais > estados[i].jarros.size()){
-            cout << "esse estado é repetido" <<endl;
-            return;
+        cout << "jarros iguais " << contJarrosIguais <<endl;
+        if (contJarrosIguais == estados[i].jarros.size()== !repeticao){
+             cout << "esse estado é repetido" <<endl;
+            return true;
         }
     }
-  cout << "esse estado não é repetido" <<endl;
+    cout << "esse estado não é repetido" <<endl;
+    return false;
 
 }
 
 
-void backtrackingRecursivo(vector<Jarro> jarros, int solucao, Estado estado_atual, vector<Estado> &estados){
-    //cout<< "Estado atual" << cont <<endl;
+void backtrackingRecursivo(vector<Jarro> jarros, int solucao, Estado &estado_atual, vector<Estado> &estados, bool &sucesso){
+    cout<< "Estado atual" <<endl;
+    estado_atual.marcarComoVisitado();
     imprimeJarros(estado_atual.jarros);
-    //estados.push_back(estado_atual);
-    // Verificar se atingiu a solução
-    if (haSolucaoNoEstadoAtual(jarros, solucao)) {
-        // Se atingiu a solução, faça o que for necessário
-        // Neste caso, estou apenas imprimindo a solução encontrada
-        cout << "Solução encontrada!" << endl;
-        imprimeJarros(jarros);
-        return;
-    }
-    // Verificar se o estado atual já foi visitado
-    //verificaEstadoRepetido(estado_atual);
-
-    // Obter os movimentos para o estado atual
-    vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-
-    // Loop para percorrer todos os movimentos possíveis
-    for (int i = 0; i < movimentos.size(); i++) {
-        // Para cada movimento possível, realizar a ação correspondente
-        for (int j = 0; j < movimentos[i].size(); j++) {
-            int movimento = movimentos[i][j];
-            if (movimento == -1) {
-                // Encher jarro i
-                jarros[i].encherJarro();
-            } else if (movimento == -2) {
-                // Esvaziar jarro i
-                jarros[i].esvaziaJarro();
-            } else {
-                // Transferir conteúdo do jarro i para o jarro movimento
-                jarros[i].transferirDesteJarroPara(jarros[movimento]);
-            }
-
-            // Atualizar o estado atual após a ação
-            Estado novo_estado = Estado(jarros);
-            novo_estado.defineMovimentos(obterMovimentosDeJarro(novo_estado));
-
-            // Chamar a função recursiva para o próximo estado
-            cout <<"chamando recursao" <<endl;
-            backtrackingRecursivo(jarros, solucao, novo_estado,estados);
-
-            // Desfazer a ação realizada (backtracking)
-            // Restaurar o estado anterior
-            jarros = estado_atual.jarros;
-            //remover o estado da lista de estados explorados
-            estados.pop_back();
-        } 
-    }
+            // Verificar se atingiu a solução
+        if (haSolucaoNoEstadoAtual(jarros, solucao)) {
+            sucesso = true;
+            // Se atingiu a solução, faça o que for necessário
+            // Neste caso, estou apenas imprimindo a solução encontrada
+            cout << "Solução encontrada!" << endl;
+            //imprimeJarros(jarros);
+            return;
+        }
+         // Verificar se o estado atual já foi visitado, se sim vamos para outro estado
+        if(verificaEstadoRepetido(estados,estado_atual)){
+            cout << "saindo dessa chamada" <<endl;
+                    return;
+        }
+        estados.push_back(estado_atual);
+        
+        // Obter os movimentos para o estado atual
+        cout<<"busca movimentos" <<endl;
+        vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
+        imprimeMovimentos(movimentos);
+        // Loop para percorrer todos os movimentos possíveis
+        for (int i = 0; i < movimentos.size(); i++) {
+            // Para cada movimento possível, realizar a ação correspondente
+            for (int j = 0; j < movimentos[i].size(); j++) {
+                if(!sucesso){
+                    int movimento = movimentos[i][j];
+                cout << "escolho um movimento"  <<endl;
+                if (movimento == -1) {
+                    // Encher jarro i
+                    cout <<"Enche jarro " << i <<endl;
+                    jarros[i].encherJarro();
+                } else if (movimento == -2) {
+                    // Esvaziar jarro i
+                    cout <<"Esvazia jarro " << i <<endl;
+                    jarros[i].esvaziaJarro();
+                } else {
+                    // Transferir conteúdo do jarro i para o jarro movimento
+                    cout <<"Transfere do jarro  " << i << " para o jarro " << movimento << endl;
+                    jarros[i].transferirDesteJarroPara(jarros[movimento]);
+                }
     
+                // Atualizar o estado atual após a ação
+                Estado novo_estado = Estado(jarros);
+                novo_estado.defineMovimentos(obterMovimentosDeJarro(novo_estado));
     
+                // Chamar a função recursiva para o próximo estado
+                backtrackingRecursivo(jarros, solucao, novo_estado,estados,sucesso);
+                // Desfazer a ação realizada (backtracking)
+                // Restaurar o estado anterior
+                jarros = estado_atual.jarros;
+                //remover o estado da lista de estados explorados
+                //estados.pop_back();
+                }
+                
+            } 
+        }
 }
 
 void backtracking(vector<Jarro>& jarros, int solucao){
-    
+    bool sucesso =false;
     //Vetor de estados
     vector<Estado> estados;
     // Criar o estado inicial
     Estado estado_inicial = Estado(jarros);
     estado_inicial.defineMovimentos(obterMovimentosDeJarro(estado_inicial));
-    estados.push_back(estado_inicial);
-    cout<< "Estado Inicial [4,0]: " << endl;
+    //estados.push_back(estado_inicial);
+    cout<< "Estado Inicial: " << endl;
     imprimeJarros(estado_inicial.jarros);
     // Chamar a função recursiva para iniciar o backtracking
-    //backtrackingRecursivo(jarros, solucao, estado_inicial, estados,jarroMaiorCapacidade.capacidade);
-    cout << "Transfere de 0, para 1 [1,3]" <<endl;
-    jarros[0].transferirDesteJarroPara(jarros[1]);
-    Estado estado2 = Estado(jarros);
-    estados.push_back(estado2);
-    cout<< "Estado 2 [1,3]: " << endl;
-    imprimeJarros(estado2.jarros);
-    jarros[1].esvaziaJarro();
-    cout << "Esvazia jarro 1 [1,0]" << endl;
-    jarros[1].encherJarro();
-    cout << "Enche jarro 1 [1,3]" << endl;
-    Estado estado3 = Estado(jarros);
-    cout<< "Estado 3 [1,3]: " << endl;
-    //estados.push_back(estado3);
-    imprimeJarros(estado3.jarros);
-    verificaEstadoRepetido(estados,estado2);
-
+    backtrackingRecursivo(jarros, solucao, estado_inicial, estados, sucesso);
     // Verificar se o backtracking resultou em fracasso
-    if (estado_inicial.visitado) {
+    if (!sucesso) {
         // Nenhum movimento válido encontrado, considerar um fracasso
         cout << "Nenhuma solução encontrada!" << endl;
     }
-    
-    //for (int i = 0; i < movimentos.size(); i++) {
-    //        cout << "Movimentos jarro " << i << ": ";
-    //        for (int k = 0; k < movimentos[i].size(); k++) {
-    //            cout << movimentos[i][k] << " , ";
-    //        }
-    //        cout << endl;
-    //    }
 }
 
 int main() {
