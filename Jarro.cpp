@@ -35,7 +35,7 @@ int Jarro::get_capacidade()
     return capacidade;
 }
 
-int Jarro::get_conteudo()
+int Jarro::get_conteudo() const
 {
     return conteudo;
 }
