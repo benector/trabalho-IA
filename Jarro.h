@@ -15,7 +15,7 @@ public:
     void setar_proximo(Jarro *proximoJarro);
     Jarro* get_proximo();
     int get_capacidade();
-    int get_conteudo();
+    int get_conteudo() const;
     void encherJarro();
     void esvaziaJarro();
     void transferirDesteJarroPara(Jarro &outroJarro);
