@@ -1,55 +1,29 @@
-#include <iostream>
-#include <vector>
-using namespace std;
+#ifndef JARRO_H
+#define JARRO_H
 
 class Jarro {
-public:
+private:
     int capacidade; // Capacidade máxima do jarro
     int conteudo;   // Quantidade de líquido no jarro
+    int h_local;    // valor da heuristica local 
+    Jarro *anterior; // Jarro anterior
+    Jarro *proximo; // Jarro posterior
 
-    // Construtor
-    Jarro(int cap);
-
+public:
+    Jarro(int num);
+    void setar_anterior(Jarro *jarroAnterior);
+    void setar_proximo(Jarro *proximoJarro);
+    Jarro* get_proximo();
+    int get_capacidade();
+    int get_conteudo() const;
     void encherJarro();
-    
     void esvaziaJarro();
-    
-    void transferirDesteJarroPara(Jarro& outroJarro);
-    
-    bool podeReceberConteudo(Jarro& outroJarro);
-    
+    void transferirDesteJarroPara(Jarro &outroJarro);
+    bool podeReceberConteudo(Jarro &outroJarro);
     bool estaVazio();
-    
     bool estaCheio();
+    int calculaHeuristicaLocal(int solucao);
+
 };
 
-// Construtor
-Jarro::Jarro(int cap)
-    : capacidade(cap), conteudo(0) {}
-
-void Jarro::encherJarro() {
-    this->conteudo = capacidade;
-}
-
-void Jarro::esvaziaJarro() {
-    this->conteudo = 0;
-}
-
-void Jarro::transferirDesteJarroPara(Jarro& outroJarro) {
-    int quantidadeTransferida = min(this->conteudo, outroJarro.capacidade - outroJarro.conteudo);
-    this->conteudo -= quantidadeTransferida;
-    outroJarro.conteudo += quantidadeTransferida;
-}
-
-bool Jarro::podeReceberConteudo(Jarro& outroJarro) {
-    int qtd = min(outroJarro.conteudo, this->capacidade - this->conteudo);
-    return qtd > 0;
-}
-
-bool Jarro::estaVazio() {
-    return conteudo == 0;
-}
-
-bool Jarro::estaCheio() {
-    return capacidade == conteudo;
-}
+#endif

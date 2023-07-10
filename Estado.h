@@ -1,40 +1,49 @@
+#ifndef ESTADO_H
+#define ESTADO_H
+#include <vector>
+#include "Jarro.h"
+#include "Passo.h"
+
 class Estado {
-public:
-    vector<Jarro> jarros;
-    vector<vector<int>> movimentos;
-    Estado* anterior;  // Ponteiro para o estado anterior
+private:
+    std::vector<Jarro> jarros;
+    std::vector<std::vector<int>> movimentos;
+    Estado *pai; 
+    std::vector<Estado> filhos;
+    std::vector<Estado> abertos;
     bool visitado;
+    int numero_movimentos;
+    int heuristica;
+    //adicao para busca em largura e profundidade
     Passo passoAteAqui;
     int profundidade;
 
+public:
+    int solucao; 
 
-    // Construtor para a raiz
-    Estado(const vector<Jarro>& jarros);
-
-    // Construtor para os demais nós
-    Estado(const vector<Jarro>& jarros, Estado* anterior, const Passo passo);
-
-    void defineMovimentos(const vector<vector<int>>& movimentos);
-
+    Estado(const std::vector<Jarro> &jarros, int sol);
+    //==inicio == Para backtracking, busca em largura e progundidade
+    Estado(const std::vector<Jarro>& jarros, int sol, Estado* pai , const Passo passo);
+    //===fim == Para backtracking busca em largura e profundidade
+    void defineMovimentos(const std::vector<std::vector<int>> &movs);
     void marcarComoVisitado();
+    void defineNumeroMovimentos(int num_movimento);
+    std::vector<Jarro> getJarros();
+    int getNumMovimentos();
+    void heuristicaCalculo();
+    int get_heuristica();
+    bool haSolucao();
+    void setPai(Estado* estadoPai);
+    Estado* getPai() const;
+    void setFilhos(std::vector<Estado> estadosFilhos);
+    std::vector<Estado> getFilhos() const;
+    void setAbertos(std::vector<Estado> estadosAbertos);
+    std::vector<Estado> getAbertos() const;
+    bool operator==(Estado& outro) const;
+    Passo getPassoAteAqui();
+    int getProfundidade();
+    void setProfundidade(int prof);
+
 };
 
-// Construtor para a raiz
-Estado::Estado(const vector<Jarro>& jarros)
-    : jarros(jarros), anterior(nullptr), visitado(false),passoAteAqui(-1, -1), profundidade(0) {}
-
-// Construtor para os demais nós
-Estado::Estado(const vector<Jarro>& jarros, Estado* anterior,const Passo passo)
-    : jarros(jarros), anterior(anterior), visitado(false), passoAteAqui(passo) {
-        this->profundidade+=1;
-    }
-
-// Define os movimentos possíveis para este estado
-void Estado::defineMovimentos(const vector<vector<int>>& movimentos) {
-    this->movimentos = movimentos;
-}
-
-// Marca o estado como visitado
-void Estado::marcarComoVisitado() {
-    this->visitado = true;
-}
+#endif
