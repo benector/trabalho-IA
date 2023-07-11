@@ -1,34 +1,35 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <ctime>
 #include <chrono>
 #include <stack>
 #include <math.h>
-#include "Passo.h"
 #include "Jarro.h"
 #include "Estado.h"
+#include "Passo.h"
 
 using namespace std;
 
 ///------------------------------- QuickSort --------------------------------------------------------
 // Função de troca de elementos
-void trocar(Estado &a, Estado &b)
+void trocar(Jarro &a, Jarro &b)
 {
-    Estado temp = a;
+    Jarro temp = a;
     a = b;
     b = temp;
 }
 
 // Função para encontrar o pivô e particionar a lista
-int particionar(std::vector<Estado> &lista, int baixo, int alto)
+int particionar(vector<Jarro> &lista, int baixo, int alto)
 {
-    Estado pivo = lista[alto]; // Escolhe o último elemento como pivô
+    Jarro pivo = lista[alto]; // Escolhe o último elemento como pivô
     int i = (baixo - 1);    // Índice do menor elemento
 
     for (int j = baixo; j <= alto - 1; j++)
     {
         // Se o elemento atual for menor ou igual ao pivô, troca os elementos
-        if (lista[j].getNumMovimentos() <= pivo.getNumMovimentos())
+        if (lista[j].getCapacidade() >= pivo.getCapacidade())
         {
             i++;
             trocar(lista[i], lista[j]);
@@ -39,7 +40,7 @@ int particionar(std::vector<Estado> &lista, int baixo, int alto)
 }
 
 // Função de ordenação QuickSort recursiva
-void quickSort(std::vector<Estado> &lista, int baixo, int alto)
+void quickSort(vector<Jarro> &lista, int baixo, int alto)
 {
     if (baixo < alto)
     {
@@ -51,14 +52,10 @@ void quickSort(std::vector<Estado> &lista, int baixo, int alto)
     }
 }
 
-///------------------------------- Funções para retornar o próximo estado -----------------------------
+//------------------ Funções para encontrar proximo estado ------------------------------------------------------------
 
-
-Estado encontrarProximoDistancia(std::vector<Estado>& estados) {
-    /*if (estados.empty()) {
-        std::cerr << "O vetor está vazio." << std::endl;
-        return nullptr; 
-    }*/
+//Função para retornar o estado com menor custo
+Estado encontrarProximoCusto(vector<Estado>& estados) {
 
     Estado menorEstado = estados[0];
 
@@ -71,16 +68,13 @@ Estado encontrarProximoDistancia(std::vector<Estado>& estados) {
     return menorEstado;
 }
 
-Estado encontrarProximoHeuristica(std::vector<Estado>& estados) {
-    /*if (estados.empty()) {
-        std::cerr << "O vetor está vazio." << std::endl;
-        return nullptr; 
-    }*/
+//Função para retornar o estado com menor valor de heuristica
+Estado encontrarProximoHeuristica(vector<Estado>& estados) {
 
     Estado menorEstado = estados[0];
 
     for (int i = 1; i < estados.size(); ++i) {
-        if (estados[i].get_heuristica() < menorEstado.get_heuristica()) {
+        if (estados[i].getHeuristica() < menorEstado.getHeuristica()) {
             menorEstado = estados[i];
         }
     }
@@ -88,19 +82,16 @@ Estado encontrarProximoHeuristica(std::vector<Estado>& estados) {
     return menorEstado;
 }
 
+//Função para retornar o estado com menor valor da função f (f = custo + heuristica)
 Estado encontrarProximoF(std::vector<Estado>& estados) {
-    /*if (estados.empty()) {
-        std::cerr << "O vetor está vazio." << std::endl;
-        return nullptr; 
-    }*/
 
     Estado menorEstado = estados[0];
     int f;
-    int f_menor = menorEstado.getNumMovimentos() + menorEstado.get_heuristica(); 
+    int f_menor = menorEstado.getNumMovimentos() + menorEstado.getHeuristica(); 
     for (int i = 1; i < estados.size(); ++i) {
-        f = estados[i].getNumMovimentos() + estados[i].get_heuristica(); 
-        f = estados[i].getNumMovimentos() + estados[i].get_heuristica(); 
-        if (estados[i].get_heuristica() < menorEstado.get_heuristica()) {
+        f = estados[i].getNumMovimentos() + estados[i].getHeuristica(); 
+        f = estados[i].getNumMovimentos() + estados[i].getHeuristica(); 
+        if (estados[i].getHeuristica() < menorEstado.getHeuristica()) {
             menorEstado = estados[i];
         }
     }
@@ -108,76 +99,94 @@ Estado encontrarProximoF(std::vector<Estado>& estados) {
     return menorEstado;
 }
 
-///------------------------------- Funções para impressões -----------------------------
+//------------------ Funções de verificações --------------------------------------------------------------------------
 
-void imprimeJarros(vector<Jarro> jarros)
-{
-    // Imprimir os jarros criados
-    for (int i = 0; i < jarros.size(); ++i)
-    {
-        Jarro &jarro = jarros[i];
-        cout << "Jarro " << i << ": Capacidade: " << jarro.get_capacidade() << ", Conteúdo: " << jarro.get_conteudo() << endl;
+//Função para verificar se um estado equivalente já foi criado anteriormente
+bool verificaEstadoRepetido(vector<Estado> &estados, Estado estado){
+
+    for(int i=0; i<estados.size();i++){
+        if(estado == estados[i])
+            return true;
     }
+    return false;
 }
 
-
-void imprimeCaminho(vector<Passo> caminho)
-{
-    for (int i = 0; i < caminho.size(); i++)
-    {
-        Passo passo = caminho[i];
-        cout << "Passo " << i + 1 << ": jarro " << passo.jarro << " ";
-        if (passo.movimento == -1)
-        {
-            cout << " enchido" << endl;
+//Função para verificar se há um estado equivalente em uma pilha
+bool verificaNoExplorado(queue<Estado> estados, Estado estado){
+    queue<Estado> tempQueue = estados;
+    int i =0;
+    while (!tempQueue.empty()) {
+        Estado estadoFila= tempQueue.front();
+        int contJarrosIguais=0;
+        for(int j=0;  j< estadoFila.getJarros().size();j++){
+            if(estadoFila.getJarros()[j].getConteudo()==estado.getJarros()[j].getConteudo()){
+                contJarrosIguais++;
+            } 
         }
-        else if (passo.movimento == -2)
-        {
-            cout << " esvaziado" << endl;
+        if (contJarrosIguais == estadoFila.getJarros().size()){
+           return true;
         }
-        else
-        {
-            cout << "transfere conteudo para o jarro " << passo.movimento << endl;
-        }
+        tempQueue.pop();
+        i++;
     }
+    return false;
 }
+
+bool verificaNoExploradoPilha(stack<Estado> estados, Estado estado){
+    stack<Estado> tempStack = estados;
+    int i =0;
+    while (!tempStack.empty()) {
+        Estado estadoPilha= tempStack.top();
+        int contJarrosIguais=0;
+        for(int j=0;  j< estadoPilha.getJarros().size();j++){
+            if(estadoPilha.getJarros()[j].getConteudo()==estado.getJarros()[j].getConteudo()){
+                contJarrosIguais++;
+            } 
+        }
+        if (contJarrosIguais == estadoPilha.getJarros().size()){
+           return true;
+        }
+        tempStack.pop();
+        i++;
+    }
+    return false;
+
+}
+
+//------------------ Funções gerais ---------------------------------------------------------------------------------------
 
 //Função para mapear os movimentos que cada jarro pode fazer
 vector<vector<int>> obterMovimentosDeJarro(Estado& estado) {
-    vector<vector<int>> movimentos;
+    //cada jarro, vai esta associado a um vetor de movimentos possiveis
+    vector<vector<int>> movimentos; 
+    //pega o conjunto de jarros do estado
+    vector<Jarro> jarros = estado.getJarros();
     //para cada um dos jarros:
-    for(int i = 0; i < estado.getJarros().size(); i++){
-        //cout << "Jarro " << i << " conteudo: " <<estado.getJarros()[i].get_conteudo() <<endl;
+    for(int i = 0; i < jarros.size(); i++){
         vector<int> movimentosJarro;
-        
-        //se o jarro está vazio ou não está cheio, pode ser preenchido por fora
-        if(estado.getJarros()[i].get_conteudo()< estado.getJarros()[i].get_capacidade()) {
-            //cout << "Pode ser preenchido por fora" <<endl;
-            movimentosJarro.push_back(-1); //preenchido por fora
+        //se o jarro está vazio ou não está cheio, pode ser preenchido por fora. Identificado como -1 na matriz
+        if(jarros[i].getConteudo() < jarros[i].getCapacidade()) {
+            movimentosJarro.push_back(-1); 
         } 
-        if(!estado.getJarros()[i].estaVazio())  {
-            //se o jarro possui conteudo, pode ser esvaziado totalmente
-            //cout << "Pode ser esvaziado totalmente" <<endl;
+
+        if(!jarros[i].estaVazio())  {
+            //se o jarro possui conteudo, pode ser esvaziado totalmente. Identificado como -2 na matriz.
             movimentosJarro.push_back(-2); //esvaziado totalmente
             
-            //ou ainda pode transferi-lo para outro
-            for(int j = 0; j < estado.getJarros().size(); j++){
-                //para cada um dos jarros restantes se puderem receber conteudo então serão adicionados
-                //na lista de movimentos de transferencia
-                if(i != j && estado.getJarros()[j].podeReceberConteudo(estado.getJarros()[i])) {
-                    //cout << "Pode transferir para jarro " << j << endl;
-                    movimentosJarro.push_back(j);
+            if(i < jarros.size()-1){
+                if(jarros[i].transferenciaPossivel()){
+                    //se for possivel, transfere para o próximo jarro
+                    movimentosJarro.push_back(1); //transferencia
                 }
             }
-        
-        } 
-        
-        movimentos.push_back(movimentosJarro);
+        }
+         
+        movimentos.push_back(movimentosJarro); 
     }
-    
     return movimentos;
 }
 
+//Retorna os possiveis estados (para serem adicidonados a lista de aberto) apartir do estado atual
 vector<Estado> obterAbertos(Estado estado_atual, int solucao)
 {
     //cout << "buscando movimentos" << endl;
@@ -187,11 +196,9 @@ vector<Estado> obterAbertos(Estado estado_atual, int solucao)
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++)
     {
-        //cout << "Iterando movimentos jarro " << i << endl;
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
-            // cout << "Configuracao atual dos jarros" <<endl;
             // imprimeJarros(jarros);
             int movimento = movimentos[i][j];
 
@@ -199,142 +206,159 @@ vector<Estado> obterAbertos(Estado estado_atual, int solucao)
 
             if (movimento == -1)
             {
-                // caminho.push_back(Passo(i,-1));
                 //  Encher jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Enche jarro " << i << endl;
                 jarrosAux[i].encherJarro();
             }
             else if (movimento == -2)
             {
-                // caminho.push_back(Passo(i,-2));
                 //  Esvaziar jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Esvazia jarro " << i << endl;
                 jarrosAux[i].esvaziaJarro();
             }
             else
             {
-                // caminho.push_back(Passo(i,movimento));
                 //  Transferir conteúdo do jarro i para o jarro movimento
-                //cout << "gerando estado para" << endl;
-                //cout << "Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                jarrosAux[i].transferirDesteJarroPara(jarrosAux[movimento]);
+                jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
-            novo_estado.defineNumeroMovimentos(estado_atual.getNumMovimentos() + 1);
+            novo_estado.setPai(&estado_atual);
+            novo_estado.setNumMovimentos(estado_atual.getNumMovimentos() + 1);
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             // Adiciona estado na fila de abertos
             abertos.push_back(novo_estado);
         }
     }
-    //cout << "Movimentos calculados. Nós abertos: " << abertos.size() << endl;
-    // Atualizar o estado atual após a ação
     return abertos;
 
 }
 
-void imprimeMovimentos(vector<vector<int>> movimentos)
+//Função para armazenar os passos até a solução
+stack<Passo> montarCaminhoSolucao(Estado *solucao){
+    //pilha para guardar os passos, o caminho da solução será a remoção dos itens da pilha
+    stack<Passo> caminho;
+    //enquanto não chegar na raiz
+    Estado *atual = solucao;
+    int i =0;
+    while(atual->getPai() != nullptr){
+        caminho.push(atual->getPassoAteAqui());
+        atual = atual->getPai();
+    }
+    return caminho;
+}
+
+//Função para calcular o fator de ramificação
+float calculaFatorRamificacao(int contFilhos, int qtdNosExplorados) {
+     if (qtdNosExplorados == 0) {
+        return 0; // Evitar divisão por zero
+    }
+    float media = static_cast<float>(contFilhos) / qtdNosExplorados;
+    int arredondado = static_cast<int>(ceil(media));
+    return arredondado;
+}
+
+//------------------------------------Funções de impressão ---------------------------------------------------------------------
+
+void imprimeJarros(vector<Jarro> jarros)
 {
-    cout << "Movimentos disponiveis " << endl;
-    for (int i = 0; i < movimentos.size(); i++)
+    // Imprimir os jarros criados
+    for (int i = 0; i < jarros.size(); ++i)
     {
-        cout << "jarro " << i << ": ";
-        for (int k = 0; k < movimentos[i].size(); k++)
-        {
-            cout << movimentos[i][k] << " , ";
-        }
-        cout << endl;
+        Jarro &jarro = jarros[i];
+        cout << "Jarro " << i+1 << ": Capacidade: " << jarro.getCapacidade() << ", Conteúdo: " << jarro.getConteudo() << endl;
     }
 }
-// Função para verificar se um estado tem jarros com a mesma distribuiçao de liquidos
 
-//Função para verificar se um estado tem jarros com a mesma distribuiçao de liquidos
-bool verificaEstadoRepetido(vector<Estado> &estados, Estado estado){
-     for(int i=0; i<estados.size();i++){
-        int contJarrosIguais=0;
-        int repeticao = 0;
-        for(int j=0;  j< estados[0].getJarros().size();j++){
-            //cout << "estado " << i << " jarro " << j << " = " << estados[i].getJarros()[j].get_conteudo() <<endl;
-            //cout << "estado checado jarro " << j << " = " << estado.getJarros()[j].get_conteudo()<<endl;
-            if(estados[i].getJarros()[j].get_conteudo()==estado.getJarros()[j].get_conteudo()){
-                contJarrosIguais++;
-            } 
-        }
-        //cout << "jarros iguais " << contJarrosIguais <<endl;
-        if (contJarrosIguais == estados[i].getJarros().size() && !repeticao){
-             //cout << "esse estado é repetido" <<endl;
-            return true;
+void imprimeCaminho(vector<Passo> caminho)
+{
+    for (int i = 0; i < caminho.size(); i++){
+        Passo passo = caminho[i];
+        cout << "Passo " << i + 1 << ": jarro " << passo.getJarro() << " ";
+        if (passo.getMovimento() == -1){
+            cout << " enchido" << endl;
+        }else if (passo.getMovimento() == -2){
+            cout << " esvaziado" << endl;
+        }else{
+            cout << "transfere conteudo para o jarro " << passo.getMovimento() << endl;
         }
     }
-    //cout << "esse estado não é repetido" <<endl;
-    return false;
-
 }
+
+void imprimeCaminhoPilha(stack<Passo> caminho){
+    cout << "Caminho para a solucao:" << endl;
+    stack<Passo> pilhaTemp = caminho;
+    int i = 1;
+    while (!pilhaTemp.empty()) {
+        Passo passo = pilhaTemp.top();
+        pilhaTemp.pop();
+        cout << "Passo " << i << ": jarro " << passo.getJarro()+1 << " ";
+        if (passo.getMovimento() == -1) {
+            cout << "enchido" << endl;
+        } else if (passo.getMovimento() == -2) {
+            cout << "esvaziado" << endl;
+        } else {
+            cout << "transfere conteudo para o jarro " << i+1 << endl;
+        }
+        i++;
+    }
+}
+
+//------------------ Algoritmos de busca ---------------------------------------------------------------------------------------
+
+//------------------ Backtracking ----------------------------------------------------------------------------------------------
 
 void backtrackingRecursivo(vector<Jarro> jarros, int solucao, Estado &estado_atual, vector<Estado> &estados, bool &sucesso, vector<Passo> &caminho){
-    //cout<< "Estado atual" <<endl;
-    //imprimeJarros(estado_atual.getJarros());
     
+     // Verificar se o estado atual já foi visitado, se sim volta para a o estado pai do estado atual na arvore de busca
+    if(verificaEstadoRepetido(estados,estado_atual)){
+        return;
+    }
+
+    //imprime o estado atual para obter a impressão da arvore de busca
+    for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
+        cout << "   ";
+    }
+    estado_atual.imprimeEstado();
+
     // Verificar se atingiu a solução
     if (estado_atual.haSolucao()) {
-        sucesso = true;
-        // Se atingiu a solução, faça o que for necessário
-        // Neste caso, estou apenas imprimindo a solução encontrada
+        sucesso = true; //seta a variavel sucesso
         cout << "Solução encontrada!" << endl;
         imprimeJarros(jarros);
-        imprimeCaminho(caminho);
-        return;
+        imprimeCaminho(caminho);        
+        return; //volta para o estado pai do estado atual na arvore de busca
     }
-     // Verificar se o estado atual já foi visitado, se sim vamos para outro estado
-    if(verificaEstadoRepetido(estados,estado_atual)){
-        //cout << "estado repetido, saindo dessa chamada" <<endl;
-        return;
-    }
+
     //Se o estado é novo então adicionamos na lista de estados explorados
     estados.push_back(estado_atual);
     
-    // Obter os movimentos para o estado atual
-    //cout<<"busca movimentos" <<endl;
-    
+    // Obter os movimentos para o estado atual    
     vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-    //imprimeMovimentos(movimentos);
     
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++) {
-        // Para cada movimento possível, realizar a ação correspondente
         for (int j = 0; j < movimentos[i].size(); j++) {
             if(!sucesso){
-                //cout << "Configuracao atual dos jarros" <<endl;
-                //imprimeJarros(jarros);
                 int movimento = movimentos[i][j];
-                //cout << "escolho um movimento"  <<endl;
                 if (movimento == -1) {
                     caminho.push_back(Passo(i,-1));
                     // Encher jarro i
-                    //cout <<"Enche jarro " << i <<endl;
                     jarros[i].encherJarro();
                 } else if (movimento == -2) {
                     caminho.push_back(Passo(i,-2));
                     // Esvaziar jarro i
-                    //cout <<"Esvazia jarro " << i <<endl;
                     jarros[i].esvaziaJarro();
-                } else {
+                } else if (movimento == 1) {
                     caminho.push_back(Passo(i,movimento));
-                    // Transferir conteúdo do jarro i para o jarro movimento
-                    //cout <<"Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                    jarros[i].transferirDesteJarroPara(jarros[movimento]);
+                    // Transferir conteúdo do jarro i para o proximo jarro
+                    jarros[i].transferirParaProximo(jarros[i+1]);
                 }
-                //cout << "Apos o movimento" <<endl;
-                //imprimeJarros(jarros);
-    
-                // Atualizar o estado atual após a ação
+
+                // Criar o novo estado gerado pelo movimento
                 Estado novo_estado = Estado(jarros,solucao);
                 novo_estado.setPai(&estado_atual);
-                novo_estado.setProfundidade(estado_atual.getProfundidade()+1);
-                novo_estado.defineMovimentos(obterMovimentosDeJarro(novo_estado));
+                novo_estado.setNumMovimentos(estado_atual.getNumMovimentos()+1);
+                estado_atual.adicionaFilho(&novo_estado);
     
                 // Chamar a função recursiva para o próximo estado
                 backtrackingRecursivo(jarros, solucao, novo_estado,estados,sucesso, caminho);
@@ -351,27 +375,26 @@ void backtrackingRecursivo(vector<Jarro> jarros, int solucao, Estado &estado_atu
     }
 }
 
+
 void backtracking(vector<Jarro>& jarros, int solucao){
     auto start = chrono::system_clock::now();
 
-    cout << "Backtracking..." <<endl;
-    bool sucesso =false;
-    //Vetor de estados
-    vector<Estado> estados;
-    //vetor de caminho para guardar os passos
-    vector<Passo> caminho;
+    cout << "Executando o algoritmo de busca Backtracking" <<endl;
+
+    bool sucesso =false; 
+    vector<Estado> estados; //Vetor de estados
+    vector<Passo> caminho; //vetor de caminho para guardar os passos
+
     // Criar o estado inicial
     Estado estado_inicial = Estado(jarros,solucao);
-    estado_inicial.defineMovimentos(obterMovimentosDeJarro(estado_inicial));
-    //estados.push_back(estado_inicial);
-    //cout<< "Estado Inicial: " << endl;
-    //imprimeJarros(estado_inicial.getJarros());
-    // Chamar a função recursiva para iniciar o backtracking
-    backtrackingRecursivo(jarros, solucao, estado_inicial, estados, sucesso, caminho);
-    // Verificar se o backtracking resultou em fracasso
-       // Obter o tempo final
-    auto end = chrono::system_clock::now();
 
+    cout << endl;
+    cout << "Arvore de busca: " << endl;
+    //Chama a função recursiva 
+    backtrackingRecursivo(jarros, solucao, estado_inicial, estados, sucesso, caminho);
+
+    // Obter o tempo final
+    auto end = chrono::system_clock::now();
     // Calcular a diferença em segundos
     chrono::duration<double> diff = end - start;
     double elapsed_seconds = diff.count();
@@ -384,93 +407,25 @@ void backtracking(vector<Jarro>& jarros, int solucao){
 
 }
 
-bool verificaNoExplorado(queue<Estado> estados, Estado estado){
-    //cout << "Teste de estado repetido" <<endl;
-    queue<Estado> tempQueue = estados;
-    int i =0;
-    while (!tempQueue.empty()) {
-        Estado estadoFila= tempQueue.front();
-        int contJarrosIguais=0;
-        for(int j=0;  j< estadoFila.getJarros().size();j++){
-            //cout << "estado " << i << " jarro " << j << " = " << estadoFila.getJarros()[j].get_conteudo() <<endl;
-            //cout << "estado checado jarro " << j << " = " << estado.getJarros()[j].get_conteudo()<<endl;
-            if(estadoFila.getJarros()[j].get_conteudo()==estado.getJarros()[j].get_conteudo()){
-                contJarrosIguais++;
-            } 
-        }
-        //cout << "jarros iguais " << contJarrosIguais <<endl;
-        if (contJarrosIguais == estadoFila.getJarros().size()){
-           return true;
-        }
-        tempQueue.pop();
-        i++;
-    }
-    return false;
-
-}
-
-stack<Passo> montarCaminhoSolucao(Estado *solucao){
-    //cout << "montando caminho para a solucao" <<endl;
-    //pilha para guardar os passos, o caminho da solução será a remoção dos itens da pilha
-    stack<Passo> caminho;
-    //enquanto não chegar na raiz
-    Estado *atual = solucao;
-    int i =0;
-    //cout << "Partindo da solucao ate a raiz: " <<endl;
-    while(atual->getPai() != nullptr){
-        //cout << "estado " << i <<endl;
-        caminho.push(atual->getPassoAteAqui());
-        //imprimeJarros(atual->jarros);
-        atual = atual->getPai();
-    }
-    return caminho;
-}
-
-void imprimeCaminhoPilha(stack<Passo> caminho){
-    cout << "Caminho para a solucao:" << endl;
-    stack<Passo> pilhaTemp = caminho;
-    int i = 1;
-    while (!pilhaTemp.empty()) {
-        Passo passo = pilhaTemp.top();
-        pilhaTemp.pop();
-        cout << "Passo " << i << ": jarro " << passo.jarro << " ";
-        if (passo.movimento == -1) {
-            cout << "enchido" << endl;
-        } else if (passo.movimento == -2) {
-            cout << "esvaziado" << endl;
-        } else {
-            cout << "transfere conteudo para o jarro " << passo.movimento << endl;
-        }
-        i++;
-    }
-}
-
-float calculaFatorRamificacao(int contFilhos, int qtdNosExplorados) {
-     if (qtdNosExplorados == 0) {
-        return 0; // Evitar divisão por zero
-    }
-    float media = static_cast<float>(contFilhos) / qtdNosExplorados;
-    int arredondado = static_cast<int>(ceil(media));
-    return arredondado;
-}
+//------------------ Busca em largura ----------------------------------------------------------------------------------------------
 
 void buscaEmLarguraRecursiva( int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, int &contFilhosGeral){
-   
-    //cout << "Expandindo no... Estado atual: " << endl;
     
-    //imprimeJarros(estado_atual.getJarros());
+    //imprime o estado atual para obter a impressão da arvore de busca
+    for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
+        cout << "   ";
+    }
+    estado_atual.imprimeEstado();
+
     //ha solucao no estado atual? se sim sucesso
     if (estado_atual.haSolucao()) {// Verificar se atingiu a solução
         sucesso = true;
         // Se atingiu a solução, faça o que for necessário
         // Neste caso, estou apenas imprimindo a solução encontrada
         cout << "Solução encontrada!" << endl;
-        imprimeJarros(estado_atual.getJarros());
-        stack<Passo> caminho = montarCaminhoSolucao(&estado_atual);
-        imprimeCaminhoPilha(caminho);
         cout<< "Total de nos abertos: " <<abertos.size() << endl;
         cout<< "Total de nos fechados: " <<fechados.size() << endl;
-        cout<< "Profundidade: " << estado_atual.getProfundidade() <<endl;
+        cout<< "Profundidade: " << estado_atual.getNumMovimentos() <<endl;
         cout << "Valor medio de ramificacao: " << calculaFatorRamificacao(contFilhosGeral, abertos.size()+fechados.size())<<endl;
 
         
@@ -484,10 +439,7 @@ void buscaEmLarguraRecursiva( int solucao, Estado &estado_atual, queue<Estado> &
     //o adicionamos no fim da fila de abertos
       
     // Obter os movimentos para o estado atual
-    //cout<<"buscando movimentos" <<endl;
     vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-    //imprimeMovimentos(movimentos);
-
     
     if(movimentos.size()!=0)
     {
@@ -499,55 +451,39 @@ void buscaEmLarguraRecursiva( int solucao, Estado &estado_atual, queue<Estado> &
     int contFilhosEsseNo =0;
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++) {
-        //cout << "Iterando movimentos jarro " << i << endl;
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++) {
                 contFilhosEsseNo+=1;
-                //cout << "Configuracao atual dos jarros" <<endl;
-                //imprimeJarros(jarros);
                 int movimento = movimentos[i][j];
                 
                 vector<Jarro> jarrosAux = estado_atual.getJarros();
                 
                 if (movimento == -1) {
-                    //caminho.push_back(Passo(i,-1));
-                    // Encher jarro i
-                    //cout << "gerando estado para"  <<endl;
-                    //cout <<"Enche jarro " << i <<endl;
                     jarrosAux[i].encherJarro();
                 } else if (movimento == -2) {
-                    //caminho.push_back(Passo(i,-2));
-                    // Esvaziar jarro i
-                    //cout << "gerando estado para"  <<endl;
-                    //cout <<"Esvazia jarro " << i <<endl;
                     jarrosAux[i].esvaziaJarro();
-                } else {
-                    //caminho.push_back(Passo(i,movimento));
-                    // Transferir conteúdo do jarro i para o jarro movimento
-                    //cout << "gerando estado para"  <<endl;
-                    //cout <<"Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                    jarrosAux[i].transferirDesteJarroPara(jarrosAux[movimento]);
+                } else if(movimento == 1){
+                    jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
                 }
                 
                 Estado novo_estado = Estado(jarrosAux,solucao, &estado_atual,Passo(i,movimento));
-                 // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
+                // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
                 //se o estado não for repetido será utilizado (expandido)
                 //em caso de estado repetido descontamos 1 unidade da quantidade de filhos pois esse nó não será gerand
                 if(verificaNoExplorado(fechados, novo_estado)){
-                    //cout << "Estado repetido entre os fechados, pula para o próximo movimento" <<endl;
+                    //Estado repetido entre os fechados, pula para o próximo movimento
                     continue;
                 }
                 if(verificaNoExplorado(abertos, novo_estado)){
-                    //cout << "Estado repetido entre os abertos, pula para o próximo movimento" <<endl;
+                    //Estado repetido entre os abertos, pula para o próximo movimento
                     continue;
                 }
-                //cout << "Estado não é repetido, adicionado na lista." << endl;
                 //Adiciona estado na fila de abertos
                 abertos.push(novo_estado);
         }
         
     }
-    //cout << "Movimentos calculados. Nós abertos: " << abertos.size() <<endl;
+
     contFilhosGeral+=contFilhosEsseNo;
     
     if(abertos.size()==0)
@@ -558,23 +494,17 @@ void buscaEmLarguraRecursiva( int solucao, Estado &estado_atual, queue<Estado> &
 
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
     buscaEmLarguraRecursiva(solucao, proximo,abertos,fechados,sucesso, contFilhosGeral);
-   // cout << "Depois da recursao temos o seguinte estado:" <<endl;
-   // imprimeJarros(estado_atual.getJarros());
-    // Desfazer a ação realizada (backtracking)
-    //remover o estado da lista de estados abertos
-    
-    
+       
 }
+
 
 void buscaEmLargura(vector<Jarro>& jarros, int solucao){
     auto start = chrono::system_clock::now();
 
-    cout << "Busca em largura ..." <<endl;
+    cout << "Executando o algoritmo de busca em largura" <<endl;
     bool sucesso =false;
-    //Lista de abertos
-    queue<Estado> abertos;
-    //Lista de fechados
-    queue<Estado> fechados;
+    queue<Estado> abertos; //Lista de abertos
+    queue<Estado> fechados; //Lista de fechados
     
     //contador para guardar a quantidade de filhos que um nó abre para fazermos o valor médio de ramificação
     int contFilhosGeral = 0;
@@ -583,14 +513,14 @@ void buscaEmLargura(vector<Jarro>& jarros, int solucao){
     // Criar o estado inicial
     Estado estado_inicial = Estado(jarros,solucao);
     abertos.push(estado_inicial);
-    //estados.push_back(estado_inicial);
-    //cout<< "Estado Inicial: " << endl;
-    //imprimeJarros(estado_inicial.getJarros());
+
+    cout << endl;
+    cout << "Arvore de busca: " << endl;
     // Chamar a função recursiva para iniciar a busca
     buscaEmLarguraRecursiva(solucao, estado_inicial,abertos, fechados, sucesso, contFilhosGeral);
-       // Obter o tempo final
-    auto end = chrono::system_clock::now();
 
+    // Obter o tempo final
+    auto end = chrono::system_clock::now();
     // Calcular a diferença em segundos
     chrono::duration<double> diff = end - start;
     double elapsed_seconds = diff.count();
@@ -604,34 +534,17 @@ void buscaEmLargura(vector<Jarro>& jarros, int solucao){
 
 }
 
-bool verificaNoExploradoPilha(stack<Estado> estados, Estado estado){
-    cout << "Teste de estado repetido" <<endl;
-    stack<Estado> tempStack = estados;
-    int i =0;
-    while (!tempStack.empty()) {
-        Estado estadoPilha= tempStack.top();
-        int contJarrosIguais=0;
-        for(int j=0;  j< estadoPilha.getJarros().size();j++){
-            //cout << "estado " << i << " jarro " << j << " = " << estadoFila.getJarros()[j].get_conteudo() <<endl;
-            //cout << "estado checado jarro " << j << " = " << estado.getJarros()[j].get_conteudo()<<endl;
-            if(estadoPilha.getJarros()[j].get_conteudo()==estado.getJarros()[j].get_conteudo()){
-                contJarrosIguais++;
-            } 
-        }
-        //cout << "jarros iguais " << contJarrosIguais <<endl;
-        if (contJarrosIguais == estadoPilha.getJarros().size()){
-           return true;
-        }
-        tempStack.pop();
-        i++;
-    }
-    return false;
-
-}
+//------------------ Busca em profundidade -----------------------------------------------------------------------------------
 
 void buscaEmProfundidadeRecursiva( int solucao, Estado &estado_atual, stack<Estado> &abertos, stack<Estado> &fechados, bool &sucesso, int &contFilhosGeral){
-    //cout << "Expandindo no... Estado atual: " << endl;
-    //imprimeJarros(estado_atual.getJarros());
+
+    //imprime o estado atual para obter a impressão da arvore de busca
+    for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
+        cout << "   ";
+    }
+    estado_atual.imprimeEstado();
+
+
     //ha solucao no estado atual? se sim sucesso
     if (estado_atual.haSolucao()) {// Verificar se atingiu a solução
         sucesso = true;
@@ -643,7 +556,7 @@ void buscaEmProfundidadeRecursiva( int solucao, Estado &estado_atual, stack<Esta
         imprimeCaminhoPilha(caminho);
         cout<< "Total de nos abertos: " <<abertos.size() << endl;
         cout<< "Total de nos fechados: " <<fechados.size() << endl;
-        cout<< "Profundidade: " << estado_atual.getProfundidade() <<endl;
+        cout<< "Profundidade: " << estado_atual.getNumMovimentos() <<endl;
         cout << "Valor medio de ramificacao: " << calculaFatorRamificacao(contFilhosGeral, abertos.size()+fechados.size())<<endl;
         return;
     }
@@ -658,81 +571,57 @@ void buscaEmProfundidadeRecursiva( int solucao, Estado &estado_atual, stack<Esta
     fechados.push(estado_atual);
 
     // Obter os movimentos para o estado atual
-    //cout<<"Buscando movimentos..." <<endl;
     vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-    //imprimeMovimentos(movimentos);
     int contFilhosEsseNo =0;
-
     
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++) {
-        //cout << "Iterando movimentos jarro " << i << endl;
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++) {
                 contFilhosEsseNo+=1;
-                //cout << "Configuracao atual dos jarros" <<endl;
-               //imprimeJarros(estado_atual.getJarros());
                 int movimento = movimentos[i][j];
                 
                 vector<Jarro> jarrosAux = estado_atual.getJarros();
                 
                 if (movimento == -1) {
-                    //caminho.push_back(Passo(i,-1));
-                    // Encher jarro i
-                    //cout << "gerando estado para"  <<endl;
-                    //cout <<"Enche jarro " << i <<endl;
                     jarrosAux[i].encherJarro();
                 } else if (movimento == -2) {
-                    //caminho.push_back(Passo(i,-2));
-                    // Esvaziar jarro i
-                    //cout << "gerando estado para"  <<endl;
-                    //cout <<"Esvazia jarro " << i <<endl;
                     jarrosAux[i].esvaziaJarro();
                 } else {
-                    //caminho.push_back(Passo(i,movimento));
-                    // Transferir conteúdo do jarro i para o jarro movimento
-                    //cout << "gerando estado para"  <<endl;
-                    //cout <<"Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                    jarrosAux[i].transferirDesteJarroPara(jarrosAux[movimento]);
+                    jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
                 }
                 
                 Estado novo_estado = Estado(jarrosAux,solucao,&estado_atual, Passo(i,movimento));
       
-                 // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
+                // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
                 //se o estado não for repetido será utilizado (expandido)
                 if(verificaNoExploradoPilha(fechados, novo_estado)){
-                    //cout << "Estado repetido entre os fechados, pula para o próximo movimento" <<endl;
                     continue;
                 }
                 if(verificaNoExploradoPilha(abertos, novo_estado)){
-                    //cout << "Estado repetido entre os abertos, pula para o próximo movimento" <<endl;
                     continue;
                 }
-                //cout << "Estado não é repetido, adicionado na lista." << endl;
                 //Adiciona estado na fila de abertos
                 abertos.push(novo_estado);
         }
         
     }
-    //cout << "Movimentos calculados. Nós abertos: " << abertos.size() <<endl;
     // Atualizar o estado atual após a ação
     if(abertos.size()==0)
     return;
     
     Estado proximo = abertos.top();
-    //cout << "Fechando no expandido. Nos fechados: " << fechados.size() << endl;
-    //caminho.push_back();
-    // Chamar a função recursiva para o próximo estado, que é o próximo da pilha
     contFilhosGeral+=contFilhosEsseNo;
- 
+
+    // Chamar a função recursiva para o próximo estado, que é o próximo da pilha
     buscaEmProfundidadeRecursiva(solucao, proximo,abertos,fechados,sucesso, contFilhosGeral);
 
-    
 }
+
 void buscaEmProfundidade(vector<Jarro>& jarros, int solucao){
     auto start = chrono::system_clock::now();
 
-    cout << "Busca em profundidade ..." <<endl;
+    cout << "Executando o algoritmo de busca em profundidade" <<endl;
     bool sucesso =false;
     //Lista de abertos
     stack<Estado> abertos;
@@ -746,11 +635,14 @@ void buscaEmProfundidade(vector<Jarro>& jarros, int solucao){
     Estado estado_inicial = Estado(jarros,solucao);
     abertos.push(estado_inicial);
 
+    cout << endl;
+    cout << "Arvore de busca: " << endl;
     // Chamar a função recursiva para iniciar a busca
     buscaEmProfundidadeRecursiva(solucao, estado_inicial,abertos, fechados, sucesso, contFilhosGeral);
+
+
    // Obter o tempo final
     auto end = chrono::system_clock::now();
-
     // Calcular a diferença em segundos
     chrono::duration<double> diff = end - start;
     double elapsed_seconds = diff.count();
@@ -764,13 +656,20 @@ void buscaEmProfundidade(vector<Jarro>& jarros, int solucao){
 
 }
 
+//------------------ Busca Ordenada ----------------------------------------------------------------------------------------------
+
 void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, vector<Passo> &caminho)
 {
-    //cout << "Expandindo no... Estado atual: " << endl;
+    //imprime o estado atual para obter a impressão da arvore de busca
+    for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
+        cout << "   ";
+    }
+    estado_atual.imprimeEstado();
+    
+
     vector<Jarro> jarros = estado_atual.getJarros();
-    //imprimeJarros(jarros);
+
     // ha solucao no estado atual? se sim sucesso
-    //cout << "aaaaaaaaa: " << estado_atual.solucao << endl;
     if (estado_atual.haSolucao())
     { // Verificar se atingiu a solução
         sucesso = true;
@@ -792,9 +691,7 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     // o adicionamos no fim da fila de abertos
 
     // Obter os movimentos para o estado atual
-    //cout << "buscando movimentos" << endl;
     vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-    //imprimeMovimentos(movimentos);
 
     if (movimentos.size() != 0)
     {
@@ -808,62 +705,46 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++)
     {
-        //cout << "Iterando movimentos jarro " << i << endl;
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
-            // cout << "Configuracao atual dos jarros" <<endl;
-            // imprimeJarros(jarros);
             int movimento = movimentos[i][j];
-
             vector<Jarro> jarrosAux = estado_atual.getJarros();
 
             if (movimento == -1)
             {
-                // caminho.push_back(Passo(i,-1));
                 //  Encher jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Enche jarro " << i << endl;
                 jarrosAux[i].encherJarro();
             }
             else if (movimento == -2)
             {
-                // caminho.push_back(Passo(i,-2));
                 //  Esvaziar jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Esvazia jarro " << i << endl;
                 jarrosAux[i].esvaziaJarro();
             }
             else
             {
-                // caminho.push_back(Passo(i,movimento));
-                //  Transferir conteúdo do jarro i para o jarro movimento
-                //cout << "gerando estado para" << endl;
-                //cout << "Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                jarrosAux[i].transferirDesteJarroPara(jarrosAux[movimento]);
+                //  Transferir conteúdo do jarro i 
+                jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
+            novo_estado.setPai(&estado_atual);
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             if (verificaNoExplorado(fechados, novo_estado))
             {
-                //cout << "Estado repetido entre os fechados, pula para o próximo movimento" << endl;
                 continue;
             }
             if (verificaNoExplorado(abertos, novo_estado))
             {
-                //cout << "Estado repetido entre os abertos, pula para o próximo movimento" << endl;
                 continue;
             }
-            //cout << "Estado não é repetido, adicionado na lista." << endl;
             // Adiciona estado na fila de abertos
             abertos.push(novo_estado);
         }
     }
     int tamanho = abertos.size();
-    //cout << "Movimentos calculados. Nós abertos: " << tamanho << endl;
-    // Atualizar o estado atual após a ação
+
     // Criar uma cópia da fila abertos
     queue<Estado> copiaAbertos = abertos;
     vector<Estado> vetor;
@@ -872,40 +753,40 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         copiaAbertos.pop();
     }
 
-    Estado proximo = encontrarProximoDistancia(vetor);
+    //encontra o estado com menor custo
+    Estado proximo = encontrarProximoCusto(vetor);
+    proximo.setNumMovimentos(proximo.getPai()->getNumMovimentos()+1);
     fechados.push(estado_atual); // ao fim adiciona o estado na fila de fechados
-    //cout << "Fechando no expandido. Nos fechados: " << fechados.size() << endl;
+
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
     buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, caminho);
-    // cout << "Depois da recursao temos o seguinte estado:" <<endl;
-    // imprimeJarros(estado_atual.getJarros());
-    // Desfazer a ação realizada (backtracking)
-    // Restaurar o estado anterior
+
+
     caminho.pop_back();
-    // remover o estado da lista de estados abertos
+
 }
+
 
 void buscaOrdenada(vector<Jarro> &jarros, int solucao)
 {
     auto start = chrono::system_clock::now();
 
-    cout << "Busca Ordenada ..." << endl;
+    cout << "Executando o algoritmo de busca ordenada" <<endl;
+
     bool sucesso = false;
-    // Lista de abertos
-    queue<Estado> abertos;
-    // Lista de fechados
-    queue<Estado> fechados;
+    queue<Estado> abertos; // Lista de abertos
+    queue<Estado> fechados; // Lista de fechados
 
     // vetor de caminho para guardar os passos
     vector<Passo> caminho;
+
     // Criar o estado inicial
-    //cout << "O valor da variavel é: "  << solucao << endl;
     Estado estado_inicial = Estado(jarros, solucao);
     abertos.push(estado_inicial);
-    // estados.push_back(estado_inicial);
-    // cout<< "Estado Inicial: " << endl;
-    // imprimeJarros(estado_inicial.getJarros());
-    //  Chamar a função recursiva para iniciar a busca
+
+    cout << endl;
+    cout << "Arvore de busca: " << endl;
+    //chama a busca recursiva
     buscaOrdenadaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, caminho);
        // Obter o tempo final
     auto end = chrono::system_clock::now();
@@ -924,11 +805,19 @@ void buscaOrdenada(vector<Jarro> &jarros, int solucao)
 
 }
 
+//------------------ Busca Gulosa ----------------------------------------------------------------------------------------------
+
 void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, vector<Passo> &caminho)
 {
-    //cout << "Expandindo no... Estado atual: " << endl;
+    //imprime o estado atual para obter a impressão da arvore de busca
+    for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
+        cout << "   ";
+    }
+    estado_atual.imprimeEstado();
+
+
     vector<Jarro> jarros = estado_atual.getJarros();
-    //imprimeJarros(jarros);
+
     // ha solucao no estado atual? se sim sucesso
     if (estado_atual.haSolucao())
     { // Verificar se atingiu a solução
@@ -951,9 +840,7 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
     // o adicionamos no fim da fila de abertos
 
     // Obter os movimentos para o estado atual
-    //cout << "buscando movimentos" << endl;
     vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-    //imprimeMovimentos(movimentos);
 
     if (movimentos.size() != 0)
     {
@@ -967,62 +854,47 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++)
     {
-        //cout << "Iterando movimentos jarro " << i << endl;
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
-            // cout << "Configuracao atual dos jarros" <<endl;
-            // imprimeJarros(jarros);
             int movimento = movimentos[i][j];
 
             vector<Jarro> jarrosAux = estado_atual.getJarros();
 
             if (movimento == -1)
             {
-                // caminho.push_back(Passo(i,-1));
                 //  Encher jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Enche jarro " << i << endl;
                 jarrosAux[i].encherJarro();
             }
             else if (movimento == -2)
             {
-                // caminho.push_back(Passo(i,-2));
                 //  Esvaziar jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Esvazia jarro " << i << endl;
                 jarrosAux[i].esvaziaJarro();
             }
             else
             {
-                // caminho.push_back(Passo(i,movimento));
-                //  Transferir conteúdo do jarro i para o jarro movimento
-                //cout << "gerando estado para" << endl;
-                //cout << "Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                jarrosAux[i].transferirDesteJarroPara(jarrosAux[movimento]);
+                //Transferir conteúdo do jarro i
+                jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
+            novo_estado.setPai(&estado_atual);
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             if (verificaNoExplorado(fechados, novo_estado))
             {
-                //cout << "Estado repetido entre os fechados, pula para o próximo movimento" << endl;
                 continue;
             }
             if (verificaNoExplorado(abertos, novo_estado))
             {
-                //cout << "Estado repetido entre os abertos, pula para o próximo movimento" << endl;
                 continue;
             }
-            //cout << "Estado não é repetido, adicionado na lista." << endl;
+
             // Adiciona estado na fila de abertos
             abertos.push(novo_estado);
         }
     }
     int tamanho = abertos.size();
-    //cout << "Movimentos calculados. Nós abertos: " << tamanho << endl;
-    // Atualizar o estado atual após a ação
 
     // Criar uma cópia da fila abertos
     queue<Estado> copiaAbertos = abertos;
@@ -1034,43 +906,38 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
 
     //Pega o proximo estado com base na heuristica
     Estado proximo = encontrarProximoHeuristica(vetor);
-
+    proximo.setNumMovimentos(proximo.getPai()->getNumMovimentos());
     fechados.push(estado_atual); // ao fim adiciona o estado na fila de fechados
-    //cout << "Fechando no expandido. Nos fechados: " << fechados.size() << endl;
+
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
     buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, caminho);
-    // cout << "Depois da recursao temos o seguinte estado:" <<endl;
-    // imprimeJarros(estado_atual.getJarros());
-    // Desfazer a ação realizada (backtracking)
-    // Restaurar o estado anterior
+
+
     caminho.pop_back();
-    // remover o estado da lista de estados abertos
 }
 
 void buscaGulosa(vector<Jarro> &jarros, int solucao)
 {
     auto start = chrono::system_clock::now();
 
-    cout << "Busca Gulosa ..." << endl;
+    cout << "Executando o algoritmo de busca Gulosa" <<endl;
     bool sucesso = false;
-    // Lista de abertos
-    queue<Estado> abertos;
-    // Lista de fechados
-    queue<Estado> fechados;
+    queue<Estado> abertos; // Lista de abertos
+    queue<Estado> fechados; // Lista de fechados
 
     // vetor de caminho para guardar os passos
     vector<Passo> caminho;
     // Criar o estado inicial
     Estado estado_inicial = Estado(jarros, solucao);
     abertos.push(estado_inicial);
-    // estados.push_back(estado_inicial);
-    // cout<< "Estado Inicial: " << endl;
-    // imprimeJarros(estado_inicial.getJarros());
+  
+    cout << endl;
+    cout << "Arvore de busca: " << endl;
     //  Chamar a função recursiva para iniciar a busca
     buscaGulosaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, caminho);
-       // Obter o tempo final
-    auto end = chrono::system_clock::now();
 
+    // Obter o tempo final
+    auto end = chrono::system_clock::now();
     // Calcular a diferença em segundos
     chrono::duration<double> diff = end - start;
     double elapsed_seconds = diff.count();
@@ -1082,15 +949,20 @@ void buscaGulosa(vector<Jarro> &jarros, int solucao)
         cout << "Nenhuma solução encontrada!" << endl;
     }
     cout << "Tempo para Busca gulosa: " << elapsed_seconds << " segundos" << endl;
-
-
 }
+
+//------------------ Busca A* ---------------------------------------------------------------------------------------------------
 
 void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, vector<Passo> &caminho)
 {
-    //cout << "Expandindo no... Estado atual: " << endl;
+    //imprime o estado atual para obter a impressão da arvore de busca
+    for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
+        cout << "   ";
+    }
+    estado_atual.imprimeEstado();
+
     vector<Jarro> jarros = estado_atual.getJarros();
-    //imprimeJarros(jarros);
+
     // ha solucao no estado atual? se sim sucesso
     if (estado_atual.haSolucao())
     { // Verificar se atingiu a solução
@@ -1113,9 +985,7 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     // o adicionamos no fim da fila de abertos
 
     // Obter os movimentos para o estado atual
-    //cout << "buscando movimentos" << endl;
     vector<vector<int>> movimentos = obterMovimentosDeJarro(estado_atual);
-    //imprimeMovimentos(movimentos);
 
     if (movimentos.size() != 0)
     {
@@ -1133,58 +1003,44 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
-            // cout << "Configuracao atual dos jarros" <<endl;
-            // imprimeJarros(jarros);
             int movimento = movimentos[i][j];
 
             vector<Jarro> jarrosAux = estado_atual.getJarros();
 
             if (movimento == -1)
             {
-                // caminho.push_back(Passo(i,-1));
                 //  Encher jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Enche jarro " << i << endl;
                 jarrosAux[i].encherJarro();
             }
             else if (movimento == -2)
             {
-                // caminho.push_back(Passo(i,-2));
                 //  Esvaziar jarro i
-                //cout << "gerando estado para" << endl;
-                //cout << "Esvazia jarro " << i << endl;
                 jarrosAux[i].esvaziaJarro();
             }
             else
             {
-                // caminho.push_back(Passo(i,movimento));
-                //  Transferir conteúdo do jarro i para o jarro movimento
-                //cout << "gerando estado para" << endl;
-                //cout << "Transfere do jarro  " << i << " para o jarro " << movimento << endl;
-                jarrosAux[i].transferirDesteJarroPara(jarrosAux[movimento]);
+                //  Transferir conteúdo do jarro i
+                jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
+            novo_estado.setPai(&estado_atual);
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             if (verificaNoExplorado(fechados, novo_estado))
             {
-                //cout << "Estado repetido entre os fechados, pula para o próximo movimento" << endl;
                 continue;
             }
             if (verificaNoExplorado(abertos, novo_estado))
             {
-                //cout << "Estado repetido entre os abertos, pula para o próximo movimento" << endl;
                 continue;
             }
-            //cout << "Estado não é repetido, adicionado na lista." << endl;
+
             // Adiciona estado na fila de abertos
             abertos.push(novo_estado);
         }
     }
     int tamanho = abertos.size();
-    //cout << "Movimentos calculados. Nós abertos: " << tamanho << endl;
-    // Atualizar o estado atual após a ação
 
     // Criar uma cópia da fila abertos
     queue<Estado> copiaAbertos = abertos;
@@ -1196,43 +1052,37 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
 
     //Pega o proximo estado com base na heuristica
     Estado proximo = encontrarProximoF(vetor);
-
+    proximo.setNumMovimentos(proximo.getPai()->getNumMovimentos());
     fechados.push(estado_atual); // ao fim adiciona o estado na fila de fechados
-    //cout << "Fechando no expandido. Nos fechados: " << fechados.size() << endl;
+
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
     buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, caminho);
-    // cout << "Depois da recursao temos o seguinte estado:" <<endl;
-    // imprimeJarros(estado_atual.getJarros());
-    // Desfazer a ação realizada (backtracking)
-    // Restaurar o estado anterior
+
     caminho.pop_back();
-    // remover o estado da lista de estados abertos
 }
 
 void buscaAestrela(vector<Jarro> &jarros, int solucao)
 {
     auto start = chrono::system_clock::now();
 
-    cout << "Busca A Estrela ..." << endl;
+    cout << "Executando o algoritmo de busca ordenada" << endl;
     bool sucesso = false;
-    // Lista de abertos
-    queue<Estado> abertos;
-    // Lista de fechados
-    queue<Estado> fechados;
+    queue<Estado> abertos; // Lista de abertos
+    queue<Estado> fechados; // Lista de fechados
 
     // vetor de caminho para guardar os passos
     vector<Passo> caminho;
     // Criar o estado inicial
     Estado estado_inicial = Estado(jarros, solucao);
     abertos.push(estado_inicial);
-    // estados.push_back(estado_inicial);
-    // cout<< "Estado Inicial: " << endl;
-    // imprimeJarros(estado_inicial.getJarros());
+
+    cout << endl;
+    cout << "Arvore de busca: " << endl;
     //  Chamar a função recursiva para iniciar a busca
     buscaGulosaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, caminho);
-       // Obter o tempo final
-    auto end = chrono::system_clock::now();
 
+    // Obter o tempo final
+    auto end = chrono::system_clock::now();
     // Calcular a diferença em segundos
     chrono::duration<double> diff = end - start;
     double elapsed_seconds = diff.count();
@@ -1247,6 +1097,7 @@ void buscaAestrela(vector<Jarro> &jarros, int solucao)
 
 }
 
+//------------------ Busca IDA* ---------------------------------------------------------------------------------------------------
 
 void buscaIDAestrela(vector<Jarro> &jarros, int solucao)
 {
@@ -1259,15 +1110,11 @@ void buscaIDAestrela(vector<Jarro> &jarros, int solucao)
 
     // Criar o estado inicial
     Estado raiz = Estado(jarros, solucao); //raiz da arvore de busca
-    raiz.defineMovimentos(obterMovimentosDeJarro(raiz));
     raiz.setPai(nullptr);
     abertos = obterAbertos(raiz, solucao);
-    quickSort(abertos, 0, abertos.size()-1);
-    raiz.setFilhos(abertos);
-    raiz.setAbertos(abertos);
     Estado estado_atual = raiz;
     //Definir os patamares
-    int patamar = estado_atual.getNumMovimentos() + estado_atual.get_heuristica();
+    int patamar = estado_atual.getNumMovimentos() + estado_atual.getHeuristica();
     int patamar_old = -1, f = -1;
 
     while(!sucesso or !fracasso){
@@ -1282,30 +1129,26 @@ void buscaIDAestrela(vector<Jarro> &jarros, int solucao)
                 imprimeJarros(jarros);
                 imprimeCaminho(caminho);
             }else{
-                f = estado_atual.getNumMovimentos() + estado_atual.get_heuristica();
+                f = estado_atual.getNumMovimentos() + estado_atual.getHeuristica();
+                estado_atual.marcarComoVisitado();
                 if(f > patamar){
                     descartados.push_back(estado_atual);
                     estado_atual = *(estado_atual.getPai());
                 }
                 if(!abertos.empty()){
                     Estado aux = estado_atual;
-                    abertos = estado_atual.getAbertos();
-                    estado_atual = abertos.front();
-                    abertos.erase(abertos.begin());
-                    aux.setAbertos(abertos);
+                    estado_atual = encontrarProximoF(abertos);
                     estado_atual.setPai(&aux);
-                    if(estado_atual.getAbertos().empty()){
-                            abertos = obterAbertos(estado_atual, solucao);
-                            if(!abertos.empty()){
-                                quickSort(abertos, 0, abertos.size()-1);
-                                estado_atual.setAbertos(abertos);
-                            }
+                    if(!estado_atual.estadoVisitado()){
+                        vector<Estado> aux = obterAbertos(estado_atual, solucao);
+                        for(int i = 0; i < aux.size(); i++)
+                            abertos.push_back(aux[i]);
                     }
                 }else{
                     if(estado_atual == raiz){
                         patamar_old = patamar; 
                         Estado min_descartado = encontrarProximoF(descartados);
-                        patamar = min_descartado.getNumMovimentos() + min_descartado.get_heuristica();
+                        patamar = min_descartado.getNumMovimentos() + min_descartado.getHeuristica();
                     }else{
                         estado_atual = *(estado_atual.getPai()); 
                     }                    
@@ -1325,61 +1168,57 @@ void buscaIDAestrela(vector<Jarro> &jarros, int solucao)
 }
 
 
+
 int main()
 {
+    //variaveis para a entrada de dados
     char resposta;
+    int opcao;
     bool repetir = true;
     bool manterEntradas = false;
+    //variaveis que serão passadas por parametro pelo usuario
+    int qtdJarros, solucao;
     vector<Jarro> jarros;
-    int qtd_jarros=0;
-    int solucao;
-    int opcao;
 
     do{
         cout << "PROBLEMA DOS JARROS" <<endl;
-        cout << "Dada uma quantidade de jarros e suas capacidades diremos se eh possivel alcancar a quantidade de litros desejada em um desses jarros por meio das seguintes operacoes:" <<endl;
-        cout << "Encher o jarro, Esvaziar o jarro, Tranfesrir o conteudo do jarro para outro" <<endl;
         if (!manterEntradas) {
-            // Criando os jarros usando um vetor
-            int jarroMaiorCapacidade = 0;
-   
+            //Obtendo os dados desejados pelo o usuario
             cout << "Insira a quantidade de jarros que deseja utilizar: ";
-            cin >> qtd_jarros;
+            cin >> qtdJarros;
             cout << "Insira a quantidade de litros desejada: ";
             cin >> solucao;
 
-            for (int i = 0; i < qtd_jarros; i++)
+            for (int i = 0; i < qtdJarros; i++)
             {
                 int capacidade;
-                cout << "Insira a capacidade do jarro " << i << ": ";
+                cout << "Insira a capacidade do jarro " << i+1 << ": ";
                 cin >> capacidade;
                 jarros.push_back(Jarro(capacidade));
-
-                if (capacidade > jarros[jarroMaiorCapacidade].get_capacidade())
-                {
-                    jarroMaiorCapacidade = i;
-                }
             }
-
-            // BACKTRACKING:
-            // Primeira estratégia: preencher o jarro de maior capacidade e usá-lo como raiz da busca
-            // O jarro de maior capacidade garantidamente pode transferir para outros sem que seu conteúdo fique vazio de primeira
-            // Se escolhermos um jarro de conteúdo inferior como raiz, ao transferir teremos a mesma função de esvaziar um jarro no início,
-            // o que é um movimento desnecessário
-
-            jarros[jarroMaiorCapacidade].encherJarro();
-            Jarro aux = jarros[0];
-
-            // Tornando o jarro de maior capacidade a raiz
-            jarros[0] = jarros[jarroMaiorCapacidade];
-            jarros[jarroMaiorCapacidade] = aux;
-            // cout <<"Jarro de maior capacidade: " << jarros[0].get_capacidade() << endl;
         }
 
-        imprimeJarros(jarros);
-        cout << "A meta é chegar em " << solucao << " litros" << endl;
+        //Organizar o vetor de jarros
+        quickSort(jarros, 0 , jarros.size()-1);
 
-        cout << "Insira o metodo de busca desejado:" << endl;
+        //Seta o ponteiro de proximo de cada jarro
+        bool verifica = true;
+        Jarro *anterior; 
+        for (Jarro& jarro : jarros) {
+            if(verifica){
+                anterior = &jarro; 
+                verifica = false; 
+            }else{
+                anterior->setProximo(&jarro);
+                anterior = &jarro;
+            }
+        }
+
+
+        cout << "A meta é chegar em " << solucao << " litros" << endl;
+        cout << endl;
+        //lista de algoritmos disponiveis
+        cout << "Lista de métodos de busca disponiveis:" << endl;
         cout << "[1] Backtracking" << endl;
         cout << "[2] Busca em largura" << endl;
         cout << "[3] Busca em profundidade" << endl;
@@ -1387,7 +1226,10 @@ int main()
         cout << "[5] Busca Gulosa" << endl;
         cout << "[6] Busca A*" << endl;
         cout << "[7] Busca IDA*" << endl;
+        cout <<endl;
+        cout << "Insira o método de busca desejado:";
         cin >> opcao;
+
         switch (opcao)
         {
             case 1:
@@ -1418,6 +1260,7 @@ int main()
                 return 0;
         }
 
+
         cout <<endl;
         cout << "Continuar usando o programa? s (sim), n (não)" <<endl; 
         cin >> resposta;
@@ -1432,9 +1275,11 @@ int main()
             }else{
                 manterEntradas = true;
             }
+            cout <<endl;
         }
 
-    }while(repetir);
-    system("pause");
-    return 0;
+    }while(repetir);   
+
+
+   return 0;
 }

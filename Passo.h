@@ -1,12 +1,20 @@
 #ifndef PASSO_H
 #define PASSO_H
-class Passo {
-public:
-    int jarro;
-    int movimento;
-    Passo();
-    Passo(int j, int m);
 
+
+class Passo {
+    private: 
+        int jarro;
+        int movimento;
+    public:
+        Passo();
+        Passo(int j, int m);
+        void setPasso(int jarro_, int movimento_);
+        int getPasso();
+        void setJarro(int jarro_);
+        int getJarro();
+        void setMovimento(int movimento_);
+        int getMovimento();
 };
 
 

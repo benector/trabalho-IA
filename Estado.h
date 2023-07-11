@@ -5,44 +5,47 @@
 #include "Passo.h"
 
 class Estado {
-private:
-    std::vector<Jarro> jarros;
-    std::vector<std::vector<int>> movimentos;
-    Estado *pai; 
-    std::vector<Estado> filhos;
-    std::vector<Estado> abertos;
-    bool visitado;
-    int numero_movimentos;
-    int heuristica;
-    //adicao para busca em largura e profundidade
-    Passo passoAteAqui;
-    int profundidade;
+    private:
+        std::vector<Jarro> jarros; //conjunto de jarros daquele estado
+        bool visitado; //se o estado já foi visitado
+        Estado *pai; //pai do estado na arvore de busca
+        std::vector<Estado*> filhos; //filhos do estado na arvore de busca
+        int numero_movimentos; //número de movimentos (profundidade na arvore)
+        int heuristica; //valor da heuristica para esse estado
+        //Utilizadas apenas internamente na clase:
+        int solucao; //valor da solução desejada
+        void calculaHeuristica(); //Função que calcula a heuristica
+        //adicao para busca em largura e profundidade
+        Passo passoAteAqui;
 
-public:
-    int solucao; 
+    
+    public:    
+        //Construtores
+        Estado(const std::vector<Jarro> &jarros, int sol);  
+        Estado(const std::vector<Jarro>& lista_jarros, int sol, Estado* anterior,const Passo passo);
+        //Definição de operadores
+        bool operator==(Estado& outro);
+        //Funções do tipo get e set
+        std::vector<Jarro> getJarros();
+        void setPai(Estado* estadoPai);
+        Estado* getPai();
+        void setFilhos(std::vector<Estado*> estadosFilhos);
+        std::vector<Estado*> getFilhos();
+        void adicionaFilho(Estado* filho);
+        Passo getPassoAteAqui();
+        void setNumMovimentos(int num);
+        int getNumMovimentos();
+        int getHeuristica();
+        //Funções gerais da classe
+        bool haSolucao();
+        bool estadoVisitado();
+        void marcarComoVisitado();
+        void imprimeEstado();
 
-    Estado(const std::vector<Jarro> &jarros, int sol);
-    //==inicio == Para backtracking, busca em largura e progundidade
-    Estado(const std::vector<Jarro>& jarros, int sol, Estado* pai , const Passo passo);
-    //===fim == Para backtracking busca em largura e profundidade
-    void defineMovimentos(const std::vector<std::vector<int>> &movs);
-    void marcarComoVisitado();
-    void defineNumeroMovimentos(int num_movimento);
-    std::vector<Jarro> getJarros();
-    int getNumMovimentos();
-    void heuristicaCalculo();
-    int get_heuristica();
-    bool haSolucao();
-    void setPai(Estado* estadoPai);
-    Estado* getPai() const;
-    void setFilhos(std::vector<Estado> estadosFilhos);
-    std::vector<Estado> getFilhos() const;
-    void setAbertos(std::vector<Estado> estadosAbertos);
-    std::vector<Estado> getAbertos() const;
-    bool operator==(Estado& outro) const;
-    Passo getPassoAteAqui();
-    int getProfundidade();
-    void setProfundidade(int prof);
+
+    
+    
+        
 
 };
 

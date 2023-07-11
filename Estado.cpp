@@ -1,132 +1,150 @@
 #include <iostream>
 #include "Estado.h"
 
-// Construtor
+using namespace std;
+
+// Construtor da classe 
 Estado::Estado(const std::vector<Jarro> &lista_jarros, int sol) 
 {
     jarros = lista_jarros;
     solucao = sol; 
     visitado = false;
     numero_movimentos = 0;
-    abertos = std::vector<Estado>();
     pai = nullptr;
-    profundidade = 0;
+    calculaHeuristica();
 
 }
 
-// Construtor para os demais nós
+//construtor da classe
 Estado::Estado(const std::vector<Jarro>& lista_jarros, int sol, Estado* anterior,const Passo passo){
     jarros = lista_jarros;
     pai = anterior;
     solucao =sol;
     visitado = false;
     passoAteAqui = passo;
-    profundidade = anterior->getProfundidade()+1;
+    numero_movimentos = anterior->getNumMovimentos()+1;
 
 }
-    
-bool Estado::operator==(Estado& outro) const {
+
+//Definição do operador de igualdade
+bool Estado::operator==(Estado& outro){
 
     for (size_t i = 0; i < jarros.size(); ++i) {
-        if (jarros[i].get_conteudo() != outro.jarros[i].get_conteudo()) {
-            return false; // Quantidades diferentes nos jarros, estados não são iguais
+        if (jarros[i].getConteudo() != outro.jarros[i].getConteudo()) {
+            return false; // quantidades diferentes nos jarros
         }
     }
-
-    if(numero_movimentos != outro.getNumMovimentos())
-        return false;
-
-    return true; // Todos os jarros têm as mesmas quantidades, estados são iguais
+    return true; // se todos os jarros têm as mesmas quantidades, então os estados são iguais
 }
 
-void Estado::defineMovimentos(const std::vector<std::vector<int>> &movs)
-{
-    movimentos = movs;
-}
-
-void Estado::marcarComoVisitado()
-{
-    visitado = true;
-}
-void Estado::defineNumeroMovimentos(int num_movimento)
-{
-    numero_movimentos = num_movimento;
-}
-
-std::vector<Jarro> Estado::getJarros()
+//Retorna a lista de jarros do estado
+vector<Jarro> Estado::getJarros()
 {
     return jarros;
 }
 
-int Estado::getNumMovimentos()
-{
-    return numero_movimentos;
-}
-
-// Função para calcular a heurística
-void Estado::heuristicaCalculo() 
-{
-    int soma = 0;
-    for (const auto& jarro : jarros) {
-        soma += std::abs(jarro.get_conteudo() - solucao);
-    }
-    heuristica = soma;
-}
-
-// Função retorna a heurística
-int Estado::get_heuristica() 
-{
-    return heuristica;
-}
-
-bool Estado::haSolucao()
-{
-    // cout << "Verifica solucao no estado atual " <<endl;
-    // imprimeJarros(jarros);
-    for (int i = 0; i < jarros.size(); i++)
-    {
-        if (jarros[i].get_conteudo() == solucao)
-        {
-            // cout << "Ha solucao no estado atual" <<endl;
-            return true;
-        }
-    }
-    // cout << "Não ha solucao no estado atual" <<endl;
-    return false;
-}
-
+//Seta o ponteiro para o pai do estado na arvore de busca
 void Estado::setPai(Estado* estadoPai) {
     pai = estadoPai;
 }
 
-Estado* Estado::getPai() const {
+//Retorna o ponteiro do pai do estado na arvore de busca
+Estado* Estado::getPai(){
     return pai;
 }
 
-void Estado::setFilhos(std::vector<Estado> estadosFilhos) {
+//Define a lista de ponteiros para filhos do estado na arvore de busca
+void Estado::setFilhos(vector<Estado*> estadosFilhos) {
     filhos = estadosFilhos;
 }
 
-std::vector<Estado> Estado::getFilhos() const {
+//Retorna a lista de ponteiros para filhos do estado na arvore de busca
+vector<Estado*> Estado::getFilhos(){
     return filhos;
 }
 
-void Estado::setAbertos(std::vector<Estado> estadosAbertos) {
-    abertos = estadosAbertos;
-}
-
-std::vector<Estado> Estado::getAbertos() const {
-    return abertos;
+//adiciona um filho do estado
+void Estado::adicionaFilho(Estado* filho)
+{
+    filhos.push_back(filho);
 }
 
 Passo Estado::getPassoAteAqui(){
     return passoAteAqui;
 }
 
-int Estado::getProfundidade(){
-    return profundidade;
+//Define o número de movimentos
+void Estado::setNumMovimentos(int num)
+{
+    numero_movimentos = num;
 }
 
-void Estado::setProfundidade(int prof){
-    profundidade = prof;
+//Retorna o número de movimentos
+int Estado::getNumMovimentos()
+{
+    return numero_movimentos;
+}
+
+// Retorna o valor da heurística
+int Estado::getHeuristica() 
+{
+    return heuristica;
+}
+
+//Verifica se algum jarro possui a quantidade desejada de liquido
+bool Estado::haSolucao()
+{  
+    for (int i = 0; i < jarros.size(); i++)
+    {
+        if (jarros[i].getConteudo() == solucao)
+            return true; //retorna verdadeiro se o jarro tiver a quantidade desejada
+    }
+    return false;
+}
+
+bool Estado::estadoVisitado()
+{
+    return visitado;
+}
+
+// Marca o estado como visitado
+void Estado::marcarComoVisitado()
+{
+    visitado = true;
+}
+
+// Função para calcular a heurística
+void Estado::calculaHeuristica() 
+{
+    int aux;
+    int h = -1; 
+    for (auto& jarro : jarros) {
+        if(jarro.getProximo() != nullptr){
+            Jarro* proximoJarro = jarro.getProximo();
+            int x1 = jarro.getConteudo(), x2 = proximoJarro->getCapacidade();
+            if(x1 == 0)
+                x1 = jarro.getCapacidade();
+            aux = 2*(static_cast<int>((x1 - (1 - static_cast<int>((x2/proximoJarro->getCapacidade())))*x2)/proximoJarro->getCapacidade())) -1;
+            if(h == -1){
+                h = aux; 
+            } else {
+                h = min(h, aux);
+            }
+        }
+    }
+    heuristica = h;
+}
+
+//Imprime as informações do estado
+void Estado::imprimeEstado()
+{
+    // Imprimir os elementos da lista de jarros
+    cout << "(";
+    for (Jarro& jarro : jarros) {
+        if(jarro.getProximo() == nullptr)
+            cout << jarro.getConteudo() << ")" << flush;
+        else
+            cout << jarro.getConteudo() << ", ";
+    }
+    cout << endl;
 }

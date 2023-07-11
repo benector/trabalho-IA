@@ -4,105 +4,95 @@
 using namespace std;
 
 // Construtor
-Jarro::Jarro(int cap) 
+Jarro::Jarro(int capacidade_) 
 {
-    capacidade = cap;
+    capacidade = capacidade_;
     conteudo = 0;
-    h_local = -1;
     proximo = nullptr;
-    anterior = nullptr; 
 }
 
-//Define qual é o jarro anterior
-void Jarro::setar_anterior(Jarro *jarroAnterior)
-{
-    anterior = jarroAnterior;
-}
-
-//Define qual é o próximo jarro 
-void Jarro::setar_proximo(Jarro *proximoJarro)
-{
-    proximo = proximoJarro;
-}
-
-Jarro* Jarro::get_proximo()
-{
-    return proximo;
-}
-
-int Jarro::get_capacidade()
+//Retorna a capacidade do jarro
+int Jarro::getCapacidade()
 {
     return capacidade;
 }
 
-int Jarro::get_conteudo() const
+//Define o novo conteudo do jarro
+void Jarro::setConteudo(int conteudo_)
+{
+    conteudo = conteudo_;
+}
+
+//Retorna o conteudo do jarro
+int Jarro::getConteudo()
 {
     return conteudo;
 }
 
+//Define qual é o jarro anterior 
+void Jarro::setAnterior(Jarro *jarroAnterior)
+{
+    anterior = jarroAnterior;
+}
+
+//Retorna o próximo jarro
+Jarro* Jarro::getAnterior()
+{
+    return anterior;
+}
+
+//Define qual é o próximo jarro 
+void Jarro::setProximo(Jarro *proximoJarro)
+{
+    proximo = proximoJarro;
+}
+
+//Retorna o próximo jarro
+Jarro* Jarro::getProximo()
+{
+    return proximo;
+}
+
+//Define o conteudo para o valor da capacidade
 void Jarro::encherJarro()
 {
     conteudo = capacidade;
 }
 
+//Define o conteudo como sendo 0
 void Jarro::esvaziaJarro()
 {
     conteudo = 0;
 }
 
-// Tranfere o conteúdo do jarro selecionado para outro jarro passado por parâmetro
-void Jarro::transferirDesteJarroPara(Jarro &outroJarro)
+// Tranfere do jarro desta instancia para outro jarro passado por parâmetro
+void Jarro::transferirParaProximo(Jarro &prox)
 {
-    int quantidadeTransferida = min(conteudo, outroJarro.capacidade - outroJarro.conteudo);
-    conteudo -= quantidadeTransferida;
-    outroJarro.conteudo += quantidadeTransferida;
+    //A quantidade transferida é limitada pelo volume dentro do jarro que irar transferir
+    //ou pelo volumo disponivel no outro jarro
+    int quantidadeTransferida = min(conteudo, prox.getCapacidade() - prox.getConteudo()); 
+    conteudo -= quantidadeTransferida; 
+    prox.setConteudo(prox.getConteudo() + quantidadeTransferida);
 }
 
-// se o jarro pode receber conteudo quer dizer que não está cheio
-bool Jarro::podeReceberConteudo(Jarro &outroJarro)
-{
-    int qtd = min(outroJarro.conteudo, this->capacidade - this->conteudo);
-    return qtd > 0;
-}
-
+//retorna booleano para indicar se o jarro está vazio 
 bool Jarro::estaVazio()
 {
     return conteudo == 0;
 }
 
+//retorna booleano para indicar se o jarro está cheio 
 bool Jarro::estaCheio()
 {
     return capacidade == conteudo;
 }
 
-int Jarro::calculaHeuristicaLocal(int solucao)
+// retorna booleano indicando se a transferencia do jarro dessa instancia para o outro 
+//passado por parametro é possivel
+bool Jarro::transferenciaPossivel()
 {
-    // Se não tiver um próximo jarro, esse jarro não pode fazer 
-    //transferencia dele para outro e por isso sua heuristica local não é utilizada 
-    if(proximo != nullptr)
-        h_local = 0;
-    else
-        return -1;
-    
-    int aux_conteudo; 
-    //Se o jarro tá vazio significa que para usa-lo teria que encher, por tanto ganha 1 movimento
-    if (estaVazio()){
-        h_local = 1;
-        aux_conteudo = capacidade; //se o jarro tiver vazio e for escolhidoo, na próxima ele estará cheio
-    }
+    if (conteudo == 0 or proximo->estaCheio()) //se este jarro está vazio ou o proximo está cheio
+        return false;                            //a transferencia não é possivel
 
-    int q = conteudo/(proximo->get_capacidade());
-    h_local = h_local + q;
-    //Está errado, pecisa implementar um while até que capcidade do proximo seja maior que o resto
-    Jarro *aux_prox = proximo->get_proximo();
-    int resto;
-    int aux_h = 0;
-    while(aux_prox->capacidade < resto){
-        resto = resto%(aux_prox->get_capacidade());
-        q = resto%(aux_prox->get_capacidade());
-        //pensar em como implementar esse ciclo 
-    }
-    return h_local;
-    
-
+    return true;  
 }
