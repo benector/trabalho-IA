@@ -9,7 +9,8 @@ Estado::Estado(const std::vector<Jarro> &lista_jarros, int sol)
     jarros = lista_jarros;
     solucao = sol; 
     visitado = false;
-    numero_movimentos = 0;
+    profundidade = 0;
+    custo = 0;
     pai = nullptr;
     calculaHeuristica();
 
@@ -20,9 +21,10 @@ Estado::Estado(const std::vector<Jarro>& lista_jarros, int sol, Estado* anterior
     jarros = lista_jarros;
     pai = anterior;
     solucao =sol;
+    custo = 0; 
     visitado = false;
     passoAteAqui = passo;
-    numero_movimentos = anterior->getNumMovimentos()+1;
+    profundidade = anterior->getProfundidade()+1;
 
 }
 
@@ -74,15 +76,27 @@ Passo Estado::getPassoAteAqui(){
 }
 
 //Define o número de movimentos
-void Estado::setNumMovimentos(int num)
+void Estado::setProfundidade(int num)
 {
-    numero_movimentos = num;
+    profundidade = num;
 }
 
 //Retorna o número de movimentos
-int Estado::getNumMovimentos()
+int Estado::getProfundidade()
 {
-    return numero_movimentos;
+    return profundidade;
+}
+
+//Seta o custo até chegar no estado
+void Estado::setCusto(int custo_)
+{
+    custo = custo_;
+}
+
+//Retorna o custo até chegar no estado
+int Estado::getCusto()
+{
+    return custo; 
 }
 
 // Retorna o valor da heurística
@@ -113,27 +127,37 @@ void Estado::marcarComoVisitado()
     visitado = true;
 }
 
+
 // Função para calcular a heurística
 void Estado::calculaHeuristica() 
 {
     int aux;
-    int h = -1; 
+    int heuristica_ = -1; 
     for (auto& jarro : jarros) {
-        if(jarro.getProximo() != nullptr){
-            Jarro* proximoJarro = jarro.getProximo();
-            int x1 = jarro.getConteudo(), x2 = proximoJarro->getCapacidade();
-            if(x1 == 0)
-                x1 = jarro.getCapacidade();
-            aux = 2*(static_cast<int>((x1 - (1 - static_cast<int>((x2/proximoJarro->getCapacidade())))*x2)/proximoJarro->getCapacidade())) -1;
-            if(h == -1){
-                h = aux; 
-            } else {
-                h = min(h, aux);
+        if(jarro.getConteudo() !=0 and jarro.getCapacidade() >= solucao)
+        if(heuristica_ == -1){
+            heuristica_ = abs(jarro.getConteudo() - solucao);
+        }else{
+            aux = abs(jarro.getConteudo() - solucao);
+            heuristica_ = min(aux, heuristica);
+        }
+    }
+
+    if(heuristica_ == -1){
+        for (auto& jarro : jarros) {
+        if(jarro.getCapacidade() >= solucao)
+            if(heuristica_ == -1){
+                heuristica_ = abs(jarro.getCapacidade() - solucao);
+            }else{
+                aux = abs(jarro.getCapacidade() - solucao);
+                heuristica_ = min(aux, heuristica);
             }
         }
     }
-    heuristica = h;
+    heuristica = heuristica_;
+
 }
+
 
 //Imprime as informações do estado
 void Estado::imprimeEstado()
