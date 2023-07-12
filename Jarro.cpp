@@ -89,9 +89,9 @@ bool Jarro::estaCheio()
 
 // retorna booleano indicando se a transferencia do jarro dessa instancia para o outro 
 //passado por parametro é possivel
-bool Jarro::transferenciaPossivel()
+bool Jarro::transferenciaPossivel(Jarro &prox)
 {
-    if (conteudo == 0 or proximo->estaCheio()) //se este jarro está vazio ou o proximo está cheio
+    if (conteudo == 0 or prox.estaCheio()) //se este jarro está vazio ou o proximo está cheio
         return false;                            //a transferencia não é possivel
 
     return true;  
