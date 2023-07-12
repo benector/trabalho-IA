@@ -176,7 +176,7 @@ vector<vector<int>> obterMovimentosDeJarro(Estado& estado) {
             movimentosJarro.push_back(-2); //esvaziado totalmente
             
             if(i < jarros.size()-1){
-                if(jarros[i].transferenciaPossivel()){
+                if(jarros[i].transferenciaPossivel(jarros[i+1])){
                     //se for possivel, transfere para o próximo jarro
                     movimentosJarro.push_back(1); //transferencia
                 }
@@ -210,23 +210,20 @@ queue<Estado> obterAbertos(Estado estado_atual, int solucao)
             if (movimento == -1)
             {
                 //  Encher jarro i
+                custo += jarrosAux[i].getCapacidade(); 
                 jarrosAux[i].encherJarro();
-                custo += jarrosAux[i].getCapacidade(); //Se o jarro for enchido, o custo disso é a capacidade do jarro
-                                                          //Pois, só é desejado encher o jarro, quando ele está vazio
             }
             else if (movimento == -2)
             {
                 //  Esvaziar jarro i
+                custo += jarrosAux[i].getCapacidade(); //Se o jarro for esvaziado, o custo disso é a conteudo do jarro
                 jarrosAux[i].esvaziaJarro();
-                custo += jarrosAux[i].getCapacidade(); //Se o jarro for esvaziado, o custo disso é a capacidade do jarro
-                                                       //Pois, só é desejado esvaziar o jarro, quando ele está cheio
             }
             else
             {
                 //Transferir conteúdo do jarro i
+                custo += min(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
-                custo += max(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
-                //na transferencia o custo é a quantidade transferida
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
@@ -745,23 +742,20 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
             if (movimento == -1)
             {
                 //  Encher jarro i
+                custo += jarrosAux[i].getCapacidade();
                 jarrosAux[i].encherJarro();
-                custo += jarrosAux[i].getCapacidade(); //Se o jarro for enchido, o custo disso é a capacidade do jarro
-                                                          //Pois, só é desejado encher o jarro, quando ele está vazio
             }
             else if (movimento == -2)
             {
                 //  Esvaziar jarro i
+                custo += jarrosAux[i].getCapacidade();
                 jarrosAux[i].esvaziaJarro();
-                custo += jarrosAux[i].getCapacidade(); //Se o jarro for esvaziado, o custo disso é a capacidade do jarro
-                                                       //Pois, só é desejado esvaziar o jarro, quando ele está cheio
             }
             else
             {
                 //Transferir conteúdo do jarro i
+                custo += min(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
-                custo += max(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
-                //na transferencia o custo é a quantidade transferida
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
@@ -1055,30 +1049,35 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     for (int i = 0; i < movimentos.size(); i++) {
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++) {
-                contFilhosEsseNo+=1;
+            contFilhosEsseNo+=1;
 
+            int custo = estado_atual.getCusto();
             int movimento = movimentos[i][j];
             vector<Jarro> jarrosAux = estado_atual.getJarros();
 
             if (movimento == -1)
             {
                 //  Encher jarro i
+                custo += jarrosAux[i].getCapacidade();
                 jarrosAux[i].encherJarro();
             }
             else if (movimento == -2)
             {
                 //  Esvaziar jarro i
+                custo += jarrosAux[i].getCapacidade();
                 jarrosAux[i].esvaziaJarro();
             }
             else
             {
                 //Transferir conteúdo do jarro i
+                custo += min(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
             Estado novo_estado = Estado(jarrosAux, solucao);
 
             novo_estado.setPai(&estado_atual);
+            novo_estado.setCusto(custo);
             novo_estado.setProfundidade(estado_atual.getProfundidade()+1);
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
@@ -1109,7 +1108,7 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     }
 
     
-    //encontra o estado com menor heuristica
+    //encontra o estado com menor f
     Estado proximo = encontrarProximoF(vetor);
     contFilhosGeral+=contFilhosEsseNo;
 
@@ -1166,31 +1165,34 @@ void buscaAestrela(vector<Jarro> &jarros, int solucao)
 //------------------ Busca IDA* ---------------------------------------------------------------------------------------------------
 
 
-void IDAestrelaRecursiva(vector<Jarro> jarros, int solucao, Estado &estado_atual, queue<Estado> &abertos, vector<Estado> &descartados, vector<Estado> &estados, bool &sucesso, bool &fracasso, vector<Passo> &caminho, int &patamar, int &patamar_old){
+void IDAestrelaRecursiva(vector<Jarro> jarros, int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, vector<Estado> &descartados, vector<Estado> &estados, bool &sucesso, bool &fracasso, vector<Passo> &caminho, int &patamar, int &patamar_old, int &contExplorados){
 
-     //imprime o estado atual para obter a impressão da arvore de busca
-    for (int i = 0; i < estado_atual.getProfundidade(); ++i) {
-        cout << "   ";
-    }
+
+    if(!sucesso and !fracasso){
+        int f = estado_atual.getCusto() + estado_atual.getHeuristica();
+        //imprime o estado atual para obter a impressão da arvore de busca
+        for (int i = 0; i < estado_atual.getProfundidade(); ++i) {
+            cout << "   ";
+        }
     estado_atual.imprimeEstado();
-    int f = estado_atual.getCusto() + estado_atual.getHeuristica();
+        contExplorados += 1;
 
     if(patamar_old == patamar){
         fracasso = true;
         cout << "Nenhuma solução encontrada!" << endl;
         return;
-    }
-
-    if(estado_atual.haSolucao() and f <= patamar){
+    } else if(estado_atual.haSolucao() and f <= patamar){
         sucesso = true;
         cout << "Solução encontrada!" << endl;
-        vector<Jarro> jarros = estado_atual.getJarros();
-        imprimeJarros(jarros);
-        imprimeCaminho(caminho);  
         return; //volta para o estado pai do estado atual na arvore de busca
-    }
+    } else {
+
+
 
     estado_atual.marcarComoVisitado();
+    removeEstado(abertos, estado_atual);
+    fechados.push(estado_atual);
+
     if(f > patamar){
         descartados.push_back(estado_atual);
         return;
@@ -1207,35 +1209,40 @@ void IDAestrelaRecursiva(vector<Jarro> jarros, int solucao, Estado &estado_atual
         for (int j = 0; j < movimentos[i].size(); j++) {
                 int custo = estado_atual.getCusto();
                 int movimento = movimentos[i][j];
+                vector<Jarro> jarros = estado_atual.getJarros();
                 if (movimento == -1) {
-                    caminho.push_back(Passo(i,-1));
                     // Encher jarro i
+                    custo += jarros[i].getCapacidade();
                     jarros[i].encherJarro();
-                    custo += jarros[i].getCapacidade();
                 } else if (movimento == -2) {
-                    caminho.push_back(Passo(i,-2));
                     // Esvaziar jarro i
-                    jarros[i].esvaziaJarro();
                     custo += jarros[i].getCapacidade();
+                    jarros[i].esvaziaJarro();
                 } else if (movimento == 1) {
-                    caminho.push_back(Passo(i,movimento));
                     // Transferir conteúdo do jarro i para o proximo jarro
+                    custo += min(jarros[i].getConteudo(), jarros[i+1].getCapacidade() - jarros[i+1].getConteudo());
                     jarros[i].transferirParaProximo(jarros[i+1]);
-                    custo += max(jarros[i].getConteudo(), jarros[i+1].getCapacidade() - jarros[i+1].getConteudo());
                 }
 
                 // Criar o novo estado gerado pelo movimento
                 Estado novo_estado = Estado(jarros,solucao);
                 novo_estado.setProfundidade(estado_atual.getProfundidade()+1);
                 novo_estado.setCusto(custo);
+
+                if (verificaNoExplorado(fechados, novo_estado))
+                {
+                    continue;
+                }
+                if (verificaNoExplorado(abertos, novo_estado))
+                {
+                    continue;
+                }
                 abertos.push(novo_estado);
              
-            }
-            
-         
+        }         
     } 
 
-    if(!abertos.empty()){
+    while(!abertos.empty() and (!sucesso and !fracasso)){
         // Criar uma cópia da fila abertos
         queue<Estado> copiaAbertos = abertos;
         vector<Estado> vetor;
@@ -1247,20 +1254,24 @@ void IDAestrelaRecursiva(vector<Jarro> jarros, int solucao, Estado &estado_atual
         Estado proximo =  encontrarProximoF(vetor);
 
         // Chamar a função recursiva para o próximo estado
-        IDAestrelaRecursiva(jarros, solucao, proximo, abertos, descartados, estados,sucesso, fracasso, caminho, patamar, patamar_old);        
-    }else{
-        if(estado_atual.getCusto() == 0){
+        IDAestrelaRecursiva(jarros, solucao, proximo, abertos, fechados, descartados, estados,sucesso, fracasso, caminho, patamar, patamar_old, contExplorados);        
+    }
+    if(estado_atual.getCusto() == 0){
             patamar_old = patamar;
             Estado minEstado = encontrarProximoF(descartados);
             patamar = minEstado.getCusto() + minEstado.getHeuristica();
             descartados.clear(); 
+            while (!fechados.empty()) {
+                fechados.pop();
+            }
             estados.clear(); 
             abertos = obterAbertos(estado_atual, solucao);
-            IDAestrelaRecursiva(jarros, solucao, estado_atual, abertos, descartados, estados,sucesso, fracasso, caminho, patamar, patamar_old);
-        }else{
-            return;
-        }
+            IDAestrelaRecursiva(jarros, solucao, estado_atual, abertos, fechados, descartados, estados,sucesso, fracasso, caminho, patamar, patamar_old, contExplorados);
+    }else{
+        return;
+    }
 
+    }
     }
     
 
@@ -1276,6 +1287,7 @@ void IDAestrela(vector<Jarro>& jarros, int solucao){
     bool fracasso =false; 
     vector<Estado> estados; //Vetor de estados
     vector<Estado> descartados; //Vetor de estados
+    queue<Estado> fechados; //Vetor de estados
     queue<Estado> abertos; //Fila de estados
     vector<Passo> caminho; //vetor de caminho para guardar os passos
 
@@ -1284,12 +1296,14 @@ void IDAestrela(vector<Jarro>& jarros, int solucao){
 
     int patamar_old = -1;
     int patamar = estado_inicial.getHeuristica() + estado_inicial.getCusto();
+    int contExplorados = 0;
 
     cout << endl;
     cout << "Arvore de busca: " << endl;
     //Chama a função recursiva 
-    IDAestrelaRecursiva(jarros, solucao, estado_inicial, abertos, descartados, estados, sucesso, fracasso, caminho, patamar, patamar_old);
+    IDAestrelaRecursiva(jarros, solucao, estado_inicial, abertos, fechados, descartados, estados, sucesso, fracasso, caminho, patamar, patamar_old, contExplorados);
 
+    cout << "Número de estados exploraados: " << contExplorados << endl;
     // Obter o tempo final
     auto end = chrono::system_clock::now();
     // Calcular a diferença em segundos
