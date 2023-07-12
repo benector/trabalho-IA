@@ -10,8 +10,9 @@ class Estado {
         bool visitado; //se o estado já foi visitado
         Estado *pai; //pai do estado na arvore de busca
         std::vector<Estado*> filhos; //filhos do estado na arvore de busca
-        int numero_movimentos; //número de movimentos (profundidade na arvore)
+        int profundidade; //número de movimentos (profundidade na arvore)
         int heuristica; //valor da heuristica para esse estado
+        int custo;
         //Utilizadas apenas internamente na clase:
         int solucao; //valor da solução desejada
         void calculaHeuristica(); //Função que calcula a heuristica
@@ -33,8 +34,10 @@ class Estado {
         std::vector<Estado*> getFilhos();
         void adicionaFilho(Estado* filho);
         Passo getPassoAteAqui();
-        void setNumMovimentos(int num);
-        int getNumMovimentos();
+        void setProfundidade(int num);
+        int getProfundidade();
+        void setCusto(int num);
+        int getCusto();
         int getHeuristica();
         //Funções gerais da classe
         bool haSolucao();
