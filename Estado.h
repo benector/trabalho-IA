@@ -41,12 +41,6 @@ class Estado {
         bool estadoVisitado();
         void marcarComoVisitado();
         void imprimeEstado();
-
-
-    
-    
-        
-
 };
 
 #endif

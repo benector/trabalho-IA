@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <queue>
 #include <ctime>
@@ -423,6 +424,9 @@ void buscaEmLarguraRecursiva( int solucao, Estado &estado_atual, queue<Estado> &
         // Se atingiu a solução, faça o que for necessário
         // Neste caso, estou apenas imprimindo a solução encontrada
         cout << "Solução encontrada!" << endl;
+        imprimeJarros(estado_atual.getJarros());
+        stack<Passo> caminho = montarCaminhoSolucao(&estado_atual);
+        imprimeCaminhoPilha(caminho);
         cout<< "Total de nos abertos: " <<abertos.size() << endl;
         cout<< "Total de nos fechados: " <<fechados.size() << endl;
         cout<< "Profundidade: " << estado_atual.getNumMovimentos() <<endl;
@@ -658,7 +662,7 @@ void buscaEmProfundidade(vector<Jarro>& jarros, int solucao){
 
 //------------------ Busca Ordenada ----------------------------------------------------------------------------------------------
 
-void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, vector<Passo> &caminho)
+void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, int contFilhosGeral)
 {
     //imprime o estado atual para obter a impressão da arvore de busca
     for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
@@ -677,7 +681,12 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         // Neste caso, estou apenas imprimindo a solução encontrada
         cout << "Solução encontrada!" << endl;
         imprimeJarros(jarros);
-        imprimeCaminho(caminho);
+        stack<Passo> caminho = montarCaminhoSolucao(&estado_atual);
+        imprimeCaminhoPilha(caminho);
+        cout<< "Total de nos abertos: " <<abertos.size() << endl;
+        cout<< "Total de nos fechados: " <<fechados.size() << endl;
+        cout<< "Profundidade: " << estado_atual.getNumMovimentos() <<endl;
+        cout << "Valor medio de ramificacao: " << calculaFatorRamificacao(contFilhosGeral, abertos.size()+fechados.size())<<endl;
         return;
     }
 
@@ -702,12 +711,14 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         return;
     }
 
+    int contFilhosEsseNo =0;
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++)
     {
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
+            contFilhosEsseNo+=1;
             int movimento = movimentos[i][j];
             vector<Jarro> jarrosAux = estado_atual.getJarros();
 
@@ -727,8 +738,7 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
-            Estado novo_estado = Estado(jarrosAux, solucao);
-            novo_estado.setPai(&estado_atual);
+            Estado novo_estado = Estado(jarrosAux,solucao,&estado_atual, Passo(i,movimento));
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             if (verificaNoExplorado(fechados, novo_estado))
@@ -744,7 +754,7 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         }
     }
     int tamanho = abertos.size();
-
+    contFilhosGeral+=contFilhosEsseNo;
     // Criar uma cópia da fila abertos
     queue<Estado> copiaAbertos = abertos;
     vector<Estado> vetor;
@@ -759,10 +769,10 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     fechados.push(estado_atual); // ao fim adiciona o estado na fila de fechados
 
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
-    buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, caminho);
+    buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, contFilhosGeral);
 
 
-    caminho.pop_back();
+    //caminho.pop_back();
 
 }
 
@@ -776,6 +786,7 @@ void buscaOrdenada(vector<Jarro> &jarros, int solucao)
     bool sucesso = false;
     queue<Estado> abertos; // Lista de abertos
     queue<Estado> fechados; // Lista de fechados
+    int contFilhosGeral =0;
 
     // vetor de caminho para guardar os passos
     vector<Passo> caminho;
@@ -787,7 +798,7 @@ void buscaOrdenada(vector<Jarro> &jarros, int solucao)
     cout << endl;
     cout << "Arvore de busca: " << endl;
     //chama a busca recursiva
-    buscaOrdenadaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, caminho);
+    buscaOrdenadaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, contFilhosGeral);
        // Obter o tempo final
     auto end = chrono::system_clock::now();
 
@@ -807,7 +818,7 @@ void buscaOrdenada(vector<Jarro> &jarros, int solucao)
 
 //------------------ Busca Gulosa ----------------------------------------------------------------------------------------------
 
-void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, vector<Passo> &caminho)
+void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, int contFilhosGeral)
 {
     //imprime o estado atual para obter a impressão da arvore de busca
     for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
@@ -826,7 +837,12 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
         // Neste caso, estou apenas imprimindo a solução encontrada
         cout << "Solução encontrada!" << endl;
         imprimeJarros(jarros);
-        imprimeCaminho(caminho);
+        stack<Passo> caminho = montarCaminhoSolucao(&estado_atual);
+        imprimeCaminhoPilha(caminho);
+        cout<< "Total de nos abertos: " <<abertos.size() << endl;
+        cout<< "Total de nos fechados: " <<fechados.size() << endl;
+        cout<< "Profundidade: " << estado_atual.getNumMovimentos() <<endl;
+        cout << "Valor medio de ramificacao: " << calculaFatorRamificacao(contFilhosGeral, abertos.size()+fechados.size())<<endl;
         return;
     }
 
@@ -851,12 +867,15 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
         return;
     }
 
+    int contFilhosEsseNo = 0;
+
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++)
     {
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
+            contFilhosEsseNo+=1;
             int movimento = movimentos[i][j];
 
             vector<Jarro> jarrosAux = estado_atual.getJarros();
@@ -877,8 +896,7 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
-            Estado novo_estado = Estado(jarrosAux, solucao);
-            novo_estado.setPai(&estado_atual);
+            Estado novo_estado = Estado(jarrosAux,solucao,&estado_atual, Passo(i,movimento));
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             if (verificaNoExplorado(fechados, novo_estado))
@@ -895,7 +913,7 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
         }
     }
     int tamanho = abertos.size();
-
+    contFilhosGeral+=contFilhosEsseNo;
     // Criar uma cópia da fila abertos
     queue<Estado> copiaAbertos = abertos;
     vector<Estado> vetor;
@@ -910,10 +928,9 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
     fechados.push(estado_atual); // ao fim adiciona o estado na fila de fechados
 
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
-    buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, caminho);
+    buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, contFilhosGeral);
 
 
-    caminho.pop_back();
 }
 
 void buscaGulosa(vector<Jarro> &jarros, int solucao)
@@ -924,7 +941,7 @@ void buscaGulosa(vector<Jarro> &jarros, int solucao)
     bool sucesso = false;
     queue<Estado> abertos; // Lista de abertos
     queue<Estado> fechados; // Lista de fechados
-
+    int contFilhosGeral;//guarda a soma da qtd de filhos de cada no;
     // vetor de caminho para guardar os passos
     vector<Passo> caminho;
     // Criar o estado inicial
@@ -934,7 +951,7 @@ void buscaGulosa(vector<Jarro> &jarros, int solucao)
     cout << endl;
     cout << "Arvore de busca: " << endl;
     //  Chamar a função recursiva para iniciar a busca
-    buscaGulosaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, caminho);
+    buscaGulosaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, contFilhosGeral);
 
     // Obter o tempo final
     auto end = chrono::system_clock::now();
@@ -953,7 +970,7 @@ void buscaGulosa(vector<Jarro> &jarros, int solucao)
 
 //------------------ Busca A* ---------------------------------------------------------------------------------------------------
 
-void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, vector<Passo> &caminho)
+void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &abertos, queue<Estado> &fechados, bool &sucesso, int contFilhosGeral)
 {
     //imprime o estado atual para obter a impressão da arvore de busca
     for (int i = 0; i < estado_atual.getNumMovimentos(); ++i) {
@@ -971,7 +988,12 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         // Neste caso, estou apenas imprimindo a solução encontrada
         cout << "Solução encontrada!" << endl;
         imprimeJarros(jarros);
-        imprimeCaminho(caminho);
+        stack<Passo> caminho = montarCaminhoSolucao(&estado_atual);
+        imprimeCaminhoPilha(caminho);
+        cout<< "Total de nos abertos: " <<abertos.size() << endl;
+        cout<< "Total de nos fechados: " <<fechados.size() << endl;
+        cout<< "Profundidade: " << estado_atual.getNumMovimentos() <<endl;
+        cout << "Valor medio de ramificacao: " << calculaFatorRamificacao(contFilhosGeral, abertos.size()+fechados.size())<<endl;
         return;
     }
 
@@ -995,7 +1017,7 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
     {
         return;
     }
-
+    int contFilhosEsseNo =0;
     // Loop para percorrer todos os movimentos possíveis
     for (int i = 0; i < movimentos.size(); i++)
     {
@@ -1003,6 +1025,8 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         // Para cada movimento possível, realizar a ação correspondente que é criar um estado novo
         for (int j = 0; j < movimentos[i].size(); j++)
         {
+            contFilhosEsseNo +=1;
+
             int movimento = movimentos[i][j];
 
             vector<Jarro> jarrosAux = estado_atual.getJarros();
@@ -1023,8 +1047,7 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
             }
 
-            Estado novo_estado = Estado(jarrosAux, solucao);
-            novo_estado.setPai(&estado_atual);
+            Estado novo_estado = Estado(jarrosAux,solucao,&estado_atual, Passo(i,movimento));
             // Verificar se o estado atual já foi visitado, ou seja, se está na lista de fechados ou explorados
             // se o estado não for repetido será utilizado (expandido)
             if (verificaNoExplorado(fechados, novo_estado))
@@ -1049,16 +1072,15 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
         vetor.push_back(copiaAbertos.front());
         copiaAbertos.pop();
     }
-
+    contFilhosGeral+=contFilhosEsseNo;
     //Pega o proximo estado com base na heuristica
     Estado proximo = encontrarProximoF(vetor);
     proximo.setNumMovimentos(proximo.getPai()->getNumMovimentos());
     fechados.push(estado_atual); // ao fim adiciona o estado na fila de fechados
 
     // Chamar a função recursiva para o próximo estado, que é o próximo da fila
-    buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, caminho);
+    buscaOrdenadaRecursiva(solucao, proximo, abertos, fechados, sucesso, contFilhosGeral);
 
-    caminho.pop_back();
 }
 
 void buscaAestrela(vector<Jarro> &jarros, int solucao)
@@ -1069,7 +1091,7 @@ void buscaAestrela(vector<Jarro> &jarros, int solucao)
     bool sucesso = false;
     queue<Estado> abertos; // Lista de abertos
     queue<Estado> fechados; // Lista de fechados
-
+    int contFilhosGeral =0;
     // vetor de caminho para guardar os passos
     vector<Passo> caminho;
     // Criar o estado inicial
@@ -1079,7 +1101,7 @@ void buscaAestrela(vector<Jarro> &jarros, int solucao)
     cout << endl;
     cout << "Arvore de busca: " << endl;
     //  Chamar a função recursiva para iniciar a busca
-    buscaGulosaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, caminho);
+    buscaGulosaRecursiva(solucao, estado_inicial, abertos, fechados, sucesso, contFilhosGeral);
 
     // Obter o tempo final
     auto end = chrono::system_clock::now();
@@ -1179,6 +1201,8 @@ int main()
     //variaveis que serão passadas por parametro pelo usuario
     int qtdJarros, solucao;
     vector<Jarro> jarros;
+     int capacidade;
+     string entrada;
 
     do{
         cout << "PROBLEMA DOS JARROS" <<endl;
@@ -1189,18 +1213,31 @@ int main()
             cout << "Insira a quantidade de litros desejada: ";
             cin >> solucao;
 
-            for (int i = 0; i < qtdJarros; i++)
-            {
-                int capacidade;
-                cout << "Insira a capacidade do jarro " << i+1 << ": ";
-                cin >> capacidade;
-                jarros.push_back(Jarro(capacidade));
+            cout << "Insira as respectivas capacidades dos jarros separadas por espaço: ";
+            cin.ignore();
+            // Loop para ler as capacidades separadas por espaço
+            getline(cin, entrada);
+
+            istringstream ss(entrada);
+            int capacidade;
+            while (ss >> capacidade) {
+                 jarros.push_back(Jarro(capacidade));
             }
+
+            // Loop para ler as capacidades informadas uma de cada vez
+            // for (int i = 0; i < qtdJarros; i++)
+            // {
+            //     int capacidade;
+            //     cout << "Insira a capacidade do jarro " << i+1 << ": ";
+            //     cin >> capacidade;
+            //     jarros.push_back(Jarro(capacidade));
+            // }
         }
 
         //Organizar o vetor de jarros
         quickSort(jarros, 0 , jarros.size()-1);
 
+        imprimeJarros(jarros);
         //Seta o ponteiro de proximo de cada jarro
         bool verifica = true;
         Jarro *anterior; 
