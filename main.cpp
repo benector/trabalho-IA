@@ -326,7 +326,7 @@ void imprimeCaminhoPilha(stack<Passo> caminho){
         } else if (passo.getMovimento() == -2) {
             cout << "esvaziado" << endl;
         } else {
-            cout << "transfere conteudo para o jarro " << i+1 << endl;
+            cout << "transfere conteudo para o jarro " << passo.getMovimento()+1 << endl;
         }
         i++;
     }
@@ -496,6 +496,7 @@ void buscaEmLarguraRecursiva( int solucao, Estado &estado_atual, queue<Estado> &
                     jarrosAux[i].esvaziaJarro();
                 } else if(movimento == 1){
                     jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
+                    movimento=i+1;
                 }
                 
                 Estado novo_estado = Estado(jarrosAux,solucao, &estado_atual,Passo(i,movimento));
@@ -621,6 +622,8 @@ void buscaEmProfundidadeRecursiva( int solucao, Estado &estado_atual, stack<Esta
                     jarrosAux[i].esvaziaJarro();
                 } else {
                     jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
+                    movimento=i+1;
+
                 }
                 
                 Estado novo_estado = Estado(jarrosAux,solucao,&estado_atual, Passo(i,movimento));
@@ -756,9 +759,10 @@ void buscaOrdenadaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
                 //Transferir conteúdo do jarro i
                 custo += min(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
+                movimento=i+1;
             }
 
-            Estado novo_estado = Estado(jarrosAux, solucao);
+            Estado novo_estado = Estado(jarrosAux,solucao, &estado_atual,Passo(i,movimento));
 
             novo_estado.setPai(&estado_atual);
             novo_estado.setCusto(custo);
@@ -915,9 +919,10 @@ void buscaGulosaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &aber
             {
                 //Transferir conteúdo do jarro i
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
+                movimento=i+1;
             }
 
-            Estado novo_estado = Estado(jarrosAux, solucao);
+                Estado novo_estado = Estado(jarrosAux,solucao, &estado_atual,Passo(i,movimento));
 
             novo_estado.setPai(&estado_atual);
 
@@ -1072,9 +1077,10 @@ void buscaAestrelaRecursiva(int solucao, Estado &estado_atual, queue<Estado> &ab
                 //Transferir conteúdo do jarro i
                 custo += min(jarrosAux[i].getConteudo(), jarrosAux[i+1].getCapacidade() - jarrosAux[i+1].getConteudo());
                 jarrosAux[i].transferirParaProximo(jarrosAux[i+1]);
+                movimento=i+1;
             }
 
-            Estado novo_estado = Estado(jarrosAux, solucao);
+            Estado novo_estado = Estado(jarrosAux,solucao, &estado_atual,Passo(i,movimento));
 
             novo_estado.setPai(&estado_atual);
             novo_estado.setCusto(custo);
@@ -1184,6 +1190,12 @@ void IDAestrelaRecursiva(vector<Jarro> jarros, int solucao, Estado &estado_atual
     } else if(estado_atual.haSolucao() and f <= patamar){
         sucesso = true;
         cout << "Solução encontrada!" << endl;
+        stack<Passo> caminho = montarCaminhoSolucao(&estado_atual);
+        imprimeCaminhoPilha(caminho);
+        cout<< "Total de nos abertos: " <<abertos.size() << endl;
+        cout<< "Total de nos fechados: " <<fechados.size() << endl;
+        cout<< "Profundidade: " << estado_atual.getProfundidade() <<endl;
+        cout << "Número de nós explorados: " << contExplorados << endl;
         return; //volta para o estado pai do estado atual na arvore de busca
     } else {
 
@@ -1222,10 +1234,11 @@ void IDAestrelaRecursiva(vector<Jarro> jarros, int solucao, Estado &estado_atual
                     // Transferir conteúdo do jarro i para o proximo jarro
                     custo += min(jarros[i].getConteudo(), jarros[i+1].getCapacidade() - jarros[i+1].getConteudo());
                     jarros[i].transferirParaProximo(jarros[i+1]);
+                    movimento=i+1;
                 }
 
                 // Criar o novo estado gerado pelo movimento
-                Estado novo_estado = Estado(jarros,solucao);
+                Estado novo_estado = Estado(jarros,solucao, &estado_atual,Passo(i,movimento));
                 novo_estado.setProfundidade(estado_atual.getProfundidade()+1);
                 novo_estado.setCusto(custo);
 
@@ -1314,7 +1327,7 @@ void IDAestrela(vector<Jarro>& jarros, int solucao){
         // Nenhum movimento válido encontrado, considerar um fracasso
         cout << "Nenhuma solução encontrada!" << endl;
     }
-    cout << "Tempo para Backtracking: " << elapsed_seconds << " segundos" << endl;
+    cout << "Tempo para IDA* " << elapsed_seconds << " segundos" << endl;
 
 }
 
