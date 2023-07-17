@@ -23,6 +23,7 @@ class Jarro {
         void encherJarro();
         void esvaziaJarro();
         void transferirParaProximo(Jarro &prox);
+        void transferirParaAnterior(Jarro &anterior);
         //Funções de verificação
         bool transferenciaPossivel(Jarro &prox);
         bool estaVazio();

@@ -75,6 +75,16 @@ void Jarro::transferirParaProximo(Jarro &prox)
     prox.setConteudo(prox.getConteudo() + quantidadeTransferida);
 }
 
+// Tranfere do jarro desta instancia para outro jarro passado por parâmetro
+void Jarro::transferirParaAnterior(Jarro &anterior)
+{
+    //A quantidade transferida é limitada pelo volume dentro do jarro que irar transferir
+    //ou pelo volumo disponivel no outro jarro
+    int quantidadeTransferida = min(conteudo, anterior.getCapacidade() - anterior.getConteudo()); 
+    conteudo -= quantidadeTransferida; 
+    anterior.setConteudo(anterior.getConteudo() + quantidadeTransferida);
+}
+
 //retorna booleano para indicar se o jarro está vazio 
 bool Jarro::estaVazio()
 {
